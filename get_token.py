@@ -1,14 +1,17 @@
-import requests
+import requests, os
 
 code = ''
+client_id = 0
+client_secret = ''
+redirect_uri = ""
 
 def get_access_token():
     api = 'https://osu.ppy.sh/oauth/token'
     data = {
         'grant_type' : 'authorization_code',
-        'client_id' : 0,
-        'client_secret' : '',
-        "redirect_uri": "",
+        'client_id' : client_id,
+        'client_secret' : client_secret,
+        "redirect_uri": redirect_uri,
         'code' : code
     }
     res = requests.post(api, data=data)
