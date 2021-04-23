@@ -21,7 +21,10 @@ async def get_api_info(project, id=0, mode='osu', **kargs):
         if project == 'info' or project == 'bind' or project == 'update':
             url = f'{api}/users/{id}/{mode}'
         elif project == 'recent':
-            url = f'{api}/users/{id}/scores/{project}?include_fails=1'
+            if mode != 'osu':
+                url = f'{api}/users/{id}/scores/{project}?mode={mode}&include_fails=1'
+            else:
+                url = f'{api}/users/{id}/scores/{project}?include_fails=1'
         elif project == 'score':
             if mode != 'osu':
                 url = f'{api}/beatmaps/{kargs["mapid"]}/scores/users/{id}?mode={mode}'
