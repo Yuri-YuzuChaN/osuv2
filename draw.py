@@ -287,7 +287,7 @@ async def draw_info(id, mode):
         im = draw_text(im, w_pp)
         op, value = info_calc(pp, n_pp, pp=True)
         if value != 0:
-            w_n_pc = datatext(305, 720, 20, f'{op}{value}', Weiruan)
+            w_n_pc = datatext(305, 720, 20, '{op}{:.2f}'.format(op, value), Weiruan)
             im = draw_text(im, w_n_pc)
         #SS - A
         gc_x = 493
