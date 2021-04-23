@@ -517,7 +517,7 @@ async def draw_score(project, id, mode, **vkargs):
         im.alpha_composite(status_bg, (76, 475))
         #supporter
         if supporter:
-            supporter_bg = Image.open(user_supporter).convert('RGBA')
+            supporter_bg = Image.open(user_supporter).convert('RGBA').resize((39, 39))
             im.alpha_composite(supporter_bg, (178, 404))
         #mapid
         w_mapid = datatext(950, 31, 18, f'Mapid: {mapid}', Torus_Regular, anchor='rm')
