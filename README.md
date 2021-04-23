@@ -20,7 +20,7 @@
 
 ## 如何申请token
 
-1. 打开osu个人设置页面：https://osu.ppy.sh/home/account/edit，拉到最下面开放授权页面
+1. 打开osu个人设置页面：https://osu.ppy.sh/home/account/edit ，拉到最下面开放授权页面
 
 2. 点击`新的 OAuth 应用`，在弹出的窗口填入`应用名称`（随意），`应用回调链接`（第三方网站或自己的网站），点击`注册应用程序`，此时你已经拥有了`OAuth客户端`，包括`token.json`需要的`client_id`（客户端ID）、`client_secret`（客户端密钥）、以及申请token使用的`应用回调链接`
 
