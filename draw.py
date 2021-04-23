@@ -462,7 +462,7 @@ async def draw_score(project, id, mode, **vkargs):
                 mods_bg = os.path.join(osufile, 'mods', f'{s_mods}.png')
                 mods_img = Image.open(mods_bg).convert('RGBA').resize((30, 20))
                 im.alpha_composite(mods_img, (mods_num, 160))
-                mods_num += 6
+                mods_num += 32
             ranking = ['XH', 'SH', 'A', 'B', 'C', 'D', 'F']
             if rank == 'X' or rank == 'S':
                 rank = rank + 'H'
