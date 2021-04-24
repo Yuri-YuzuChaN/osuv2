@@ -238,7 +238,7 @@ async def draw_info(id, mode):
         icon_bg = Image.open(user_icon).convert('RGBA').resize((300, 300))
         icon_img = draw_fillet(icon_bg, 25)
         im.alpha_composite(icon_img, (50, 148))
-        # #模式
+        #模式
         
         #地区
         country_bg = Image.open(country).convert('RGBA').resize((80, 54))
@@ -287,7 +287,7 @@ async def draw_info(id, mode):
         im = draw_text(im, w_pp)
         op, value = info_calc(pp, n_pp, pp=True)
         if value != 0:
-            w_n_pc = datatext(305, 720, 20, '{op}{:.2f}'.format(op, value), Weiruan)
+            w_n_pc = datatext(305, 720, 20, '{}{:.2f}'.format(op, value), Weiruan)
             im = draw_text(im, w_n_pc)
         #SS - A
         gc_x = 493
@@ -425,11 +425,13 @@ async def draw_score(project, id, mode, **vkargs):
         #获取文件
         version_osu = get_file(dirpath, mapid, version)
         #pp
-        if project == 'recent' and mode == 0:
+        if (project == 'recent' or project == 'bp') and mode == 0:
             setmods = 0
             if mods:
                 setmods = get_mods_num(mods)
-            pp, aim_pp, speed_pp, acc_pp = calc_pp(version_osu, setmods, maxcb, c50, c100, c300, cmiss)
+            pp_, aim_pp, speed_pp, acc_pp = calc_pp(version_osu, setmods, maxcb, c50, c100, c300, cmiss)
+            pp = int(pp) if project == 'bp' else pp_
+            ifpp = calc_if(version_osu, setmods, c50, c100, mapinfo['max_combo'])
         elif project == 'recent' and mode != 0:
             pp, aim_pp, speed_pp, acc_pp = '--', '--', '--', '--'
         else:
@@ -571,7 +573,7 @@ async def draw_score(project, id, mode, **vkargs):
             # pfm_x = [699, 799, 900, 686, 761, 836, 911]
             w_acc = datatext(700, 420, 20, '{:.2f}%'.format(acc * 100), Torus_Regular, anchor='mm')
             w_maxcb = datatext(799, 420, 20, f'{format(maxcb, ",")}x', Torus_Regular, anchor='mm')
-            w_pp = datatext(901, 420, 20, pp, Torus_Regular, anchor='mm')
+            w_pp = datatext(901, 420, 20, '{}/{}'.format(pp, ifpp), Torus_Regular, anchor='mm')
             w_300 = datatext(687, 480, 20, c300, Torus_Regular, anchor='mm')
             w_100 = datatext(763, 480, 20, c100, Torus_Regular, anchor='mm')
             w_50 = datatext(838, 480, 20, c50, Torus_Regular, anchor='mm')
