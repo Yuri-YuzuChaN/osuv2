@@ -57,7 +57,7 @@ def calc_if(osufile, mods_num, c50, c100, mapcb):
         n100=c100, n50=c50, nmiss=0, max_combo=mapcb, bmap=bmap
     )
 
-    return pp[0]
+    return int(pp[0])
 
 def calc_time(osufile, c50, c100, c300, miss):
     setcb = c50 + c100 + c300 + miss
