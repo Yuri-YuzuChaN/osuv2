@@ -193,7 +193,7 @@ async def draw_info(id, mode):
         level = play['level']
         current = level['current']
         progress = level['progress']
-        grank = play['global_rank']
+        grank = play['global_rank'] if play['global_rank'] else 0
         pp = play['pp']
         r_score = play['ranked_score']
         acc = round(play['hit_accuracy'], 2)
@@ -203,7 +203,7 @@ async def draw_info(id, mode):
         count = play['total_hits']
         g_counts = play['grade_counts']
         gc = g_counts['ssh'], g_counts['ss'], g_counts['sh'], g_counts['s'], g_counts['a']
-        crank = play['country_rank']
+        crank = play['country_rank'] if play['country_rank'] else 0
         #对比
         result = esql.get_all_newinfo(uid, FGM[mode])
         if result:
@@ -774,10 +774,10 @@ async def user(id, update=False):
             play = info['statistics']
             count = play['total_hits']
             pc = play['play_count']
-            g_ranked = play['global_rank']
+            g_ranked = play['global_rank'] if play['global_rank'] else 0
             pp = play['pp']
             acc = round(play['hit_accuracy'], 2)
-            c_ranked = play['country_rank']
+            c_ranked = play['country_rank'] if play['country_rank'] else 0
             if update:
                 esql.update_all_info(id, c_ranked, g_ranked, pp, acc, pc, count, mode)
             else:
