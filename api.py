@@ -49,8 +49,6 @@ async def return_info(url):
             async with aiohttp.ClientSession() as session:
                 async with session.get(url, headers=headers) as req:
                     if req.status != 200:
-                        if req.status == 404:
-                            return '请确认查询的地图模式与BOT默认查询模式一致，可以在指令添加查询模式'
                         return 'API请求失败，请联系管理员或稍后再尝试'
                     return await req.json()
     except:
