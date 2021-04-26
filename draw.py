@@ -267,7 +267,7 @@ async def draw_info(id, mode):
         im = draw_text(im, w_crank)
         op, value = info_calc(crank, n_crank, rank=True)
         if value != 0:
-            w_n_crank = datatext(610, 448, 25, f'({op}{value})', Weiruan, anchor='lb')
+            w_n_crank = datatext(610, 448, 25, '({}{:,})'.format(op, value), Weiruan, anchor='lb')
             im = draw_text(im, w_n_crank)
         #等级
         w_current = datatext(900, 548, 25, current, Torus_Regular, anchor='mm')
@@ -280,7 +280,7 @@ async def draw_info(id, mode):
         im = draw_text(im, w_grank)
         op, value = info_calc(grank, n_grank, rank=True)
         if value != 0:
-            w_n_grank = datatext(65, 720, 20, f'{op}{value}', Weiruan)
+            w_n_grank = datatext(65, 720, 20, '{}{:,}'.format(op, value), Weiruan)
             im = draw_text(im, w_n_grank)
         #pp
         w_pp = datatext(295, 685, 35, format(pp, ","), Torus_Regular)
@@ -783,6 +783,7 @@ async def user(id, update=False):
             else:
                 esql.insert_all_info(id, c_ranked, g_ranked, pp, acc, pc, count, mode)
         else:
+            username = info['username']
             if update:
                 esql.update_all_info(id, 0, 0, 0, 0, 0, 0, mode)
             else:
