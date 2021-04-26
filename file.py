@@ -1,11 +1,9 @@
 import aiohttp, os, re, zipfile, aiohttp
-from PIL import Image
 
 osupath = os.path.dirname(__file__)
 osufile = f'{osupath}/osufile/'
 mapfile = f'{osufile}map/'
 iconfile = f'{osufile}icon/'
-outputfile = f'{osufile}output/'
 
 async def MapDownload(mapid):
     # 判断是否存在该文件
@@ -96,6 +94,8 @@ async def get_project_img(project, url, uid, update=False):
             if name in file:
                 return iconfile + name
     try:
+        if 'avatar-guest.png' in url:
+            url = 'https://osu.ppy.sh/images/layout/avatar-guest.png'
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as req:
                 chunk = await req.read()
