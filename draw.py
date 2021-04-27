@@ -245,7 +245,7 @@ async def draw_info(id, mode):
         im.alpha_composite(country_bg, (400, 394))
         #supporter
         if supporter:
-            supporter_bg = Image.open(user_supporter).convert('RGBA').resize((80, 80))
+            supporter_bg = Image.open(user_supporter).convert('RGBA').resize((54, 54))
             im.alpha_composite(supporter_bg, (400, 300))
         #经验
         if progress != 0:  
@@ -318,8 +318,8 @@ async def draw_info(id, mode):
         im = draw_text(im, w_conut) 
         #游玩时间
         sec = timedelta(seconds = play_time)
-        d_time = datetime(1, 1, 1, 1) + sec
-        t_time = "%dd %dh %dm %ds" % (d_time.day-1, d_time.hour, d_time.minute, d_time.second)
+        d_time = datetime(1, 1, 1) + sec
+        t_time = "%dd %dh %dm %ds" % (sec.days, d_time.hour, d_time.minute, d_time.second)
         w_name = datatext(935, 1145, 40, t_time, Torus_Regular, anchor='rt')
         im = draw_text(im, w_name)
         #输出
