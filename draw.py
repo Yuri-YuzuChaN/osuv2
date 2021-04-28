@@ -246,7 +246,7 @@ async def draw_info(id, mode):
         #supporter
         if supporter:
             supporter_bg = Image.open(user_supporter).convert('RGBA').resize((54, 54))
-            im.alpha_composite(supporter_bg, (400, 300))
+            im.alpha_composite(supporter_bg, (400, 280))
         #经验
         if progress != 0:  
             exp_left_bg = Image.open(exp_l).convert('RGBA')
