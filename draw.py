@@ -684,10 +684,13 @@ async def map_info(mapid, mods):
     source = bmap['source']
     cover = bmap['covers']['list@2x']
     music = bmap['preview_url']
-    if source == None:
-        source = 'Nothing'
     ranked_date = bmap['ranked_date']
-    map_cb = info['max_combo']
+    if not source:
+        source = 'Nothing'
+    if info['mode_int'] == 3:
+        map_cb = 'No MaxCombo'
+    else:
+        map_cb = info['max_combo']
 
     dirpath = await MapDownload(bmapid)
     version_osu = get_file(dirpath, mapid, version)
@@ -700,8 +703,11 @@ async def map_info(mapid, mods):
     map_len[1] = map_len[1] if map_len[1] >= 10 else f'0{map_len[1]}'
     music_len = f'{map_len[0]}:{map_len[1]}'
 
-    old_time = datetime.strptime(ranked_date.replace('+00:00', ''), '%Y-%m-%dT%H:%M:%S')
-    new_time = (old_time + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
+    if ranked_date:
+        old_time = datetime.strptime(ranked_date.replace('+00:00', ''), '%Y-%m-%dT%H:%M:%S')
+        new_time = (old_time + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
+    else:
+        new_time = 'No Ranked'
 
     musicinfo = f'[CQ:record,file=https:{music}]'
     mapinfo.append(f'[CQ:image,file={cover}]\n')
