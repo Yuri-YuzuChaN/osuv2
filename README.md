@@ -15,6 +15,7 @@
 **注：`pillow`需要高于等于8.0.0版本，Windows环境下`oppai`模块已自带，`oppai`目前必须在`py38 64bit`环境下才可运行**
 
 **`Maniera`依赖需自行修改文件第51行，添加`encoding='utf-8'`**
+
     ```python
     {
         with open(self.osupath, encoding='utf-8') as bmap:
