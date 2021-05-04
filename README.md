@@ -16,13 +16,13 @@
 
 **`Maniera`依赖需自行修改文件第51行，添加`encoding='utf-8'`**
 
-    ```python
-    {
-        with open(self.osupath, encoding='utf-8') as bmap:
-            textContent = bmap.read()
-            lines = textContent.splitlines()
-    }
-    ```
+```python
+{
+    with open(self.osupath, encoding='utf-8') as bmap:
+        textContent = bmap.read()
+        lines = textContent.splitlines()
+}
+```
     
 **如果环境为Linux，请`pip install oppai`，并将`osu_pp.py`中`.oppai.oppai`改为`oppai`**
 
