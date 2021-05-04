@@ -425,13 +425,17 @@ async def draw_score(project, id, mode, **vkargs):
         #获取文件
         version_osu = get_file(dirpath, mapid, version)
         #pp
-        if (project == 'recent' or project == 'bp') and mode == 0:
-            setmods = 0
-            if mods:
-                setmods = get_mods_num(mods)
+        setmods = 0
+        if mods:
+            setmods = get_mods_num(mods)
+        if mode == 0:
             pp_, aim_pp, speed_pp, acc_pp = calc_pp(version_osu, setmods, maxcb, c50, c100, c300, cmiss)
-            pp = int(pp) if project == 'bp' else pp_
+            pp = int(pp) if project == 'bp' or project == 'score' else pp_
             ifpp = calc_if(version_osu, setmods, c50, c100, mapinfo['max_combo'])
+        elif mode == 3:
+            pp_ = calc_mania_pp(version_osu, setmods, score)
+            pp = int(pp) if project == 'bp' or project == 'score' else pp_
+            ifpp = calc_mania_pp(version_osu, setmods, 1000000)
         elif project == 'recent' and mode != 0:
             pp, aim_pp, speed_pp, acc_pp = '--', '--', '--', '--'
         else:
@@ -452,7 +456,7 @@ async def draw_score(project, id, mode, **vkargs):
         diff_name = stars_diff(diff)
         mode_bg = get_mode_img(mode, diff_name)
         mode_img = Image.open(mode_bg).convert('RGBA').resize((20, 20))
-        im.alpha_composite(mode_img, (50, 101))
+        im.alpha_composite(mode_img, (50, 102))
         #难度星星
         stars_bg = os.path.join(osufile, 'work', f'stars_{diff_name}.png')
         stars_img = Image.open(stars_bg).convert('RGBA').resize((15, 15))
@@ -601,7 +605,7 @@ async def draw_score(project, id, mode, **vkargs):
             # pfm_x = [622, 753, 884, 591, 655, 720, 786, 852, 917]
             w_acc = datatext(622, 420, 20, '{:.2f}%'.format(acc * 100), Torus_Regular, anchor='mm')
             w_maxcb = datatext(753, 420, 20, f'{format(maxcb, ",")}x', Torus_Regular, anchor='mm')
-            w_pp = datatext(884, 420, 20, pp, Torus_Regular, anchor='mm')
+            w_pp = datatext(884, 420, 20, '{}/{}'.format(pp, ifpp), Torus_Regular, anchor='mm')
             w_geki = datatext(591, 480, 20, cgeki, Torus_Regular, anchor='mm')
             im = draw_text(im, w_geki)
             w_300 = datatext(656, 480, 20, c300, Torus_Regular, anchor='mm')
