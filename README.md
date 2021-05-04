@@ -8,12 +8,21 @@
 
 1. 将该项目放在HoshinoBot插件目录 `modules` 下，或者clone本项目 `git clone https://github.com/Yuri-YuzuChaN/osuv2`
 2. 在`token.json`填入申请的`client_id`，`client_secret`，`access_token`，`refresh_token`，[如何申请token](#如何申请token)
-3. pip以下依赖：`pillow`，`oppai`，`pyttanko`，`matplotlib`，`traceback`
+3. pip以下依赖：`pillow`，`oppai`，`pyttanko`，`matplotlib`，`traceback`, `Maniera`
 4. 在`config/__bot__.py`模块列表中添加`osuv2`
 5. 重启HoshinoBot
 
 **注：`pillow`需要高于等于8.0.0版本，Windows环境下`oppai`模块已自带，`oppai`目前必须在`py38 64bit`环境下才可运行**
 
+**`Maniera`依赖需自行修改文件第51行，添加`encoding='utf-8'`**
+    ```python
+    {
+        with open(self.osupath, encoding='utf-8') as bmap:
+            textContent = bmap.read()
+            lines = textContent.splitlines()
+    }
+    ```
+    
 **如果环境为Linux，请`pip install oppai`，并将`osu_pp.py`中`.oppai.oppai`改为`oppai`**
 
 **现版本pp计算模块更换为`pyttanko`，基本脱离`oppai`模块，现仅用于时长计算**
@@ -82,6 +91,9 @@
 1. ~~pp+数据~~
 
 ## 更新说明
+
+**2021-05-04**
+1. 支持`mania`模式pp计算
 
 **2021-05-02**
 1. 修复`map`指令查询非ranked图时出错的问题
