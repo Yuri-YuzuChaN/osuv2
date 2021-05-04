@@ -1,4 +1,5 @@
 from .oppai.oppai import *
+from maniera.calculator import Maniera
 import pyttanko as osu
 
 def calc_acc_pp(osufile, mods_num):
@@ -58,6 +59,11 @@ def calc_if(osufile, mods_num, c50, c100, mapcb):
     )
 
     return int(pp[0])
+
+def calc_mania_pp(osufile, mods_num, score):
+    calc = Maniera(osufile, mods_num, score)
+    calc.calculate()
+    return int(calc.pp)
 
 def calc_time(osufile, c50, c100, c300, miss):
     setcb = c50 + c100 + c300 + miss
