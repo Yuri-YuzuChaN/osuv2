@@ -86,7 +86,7 @@
 |        |                                                              | [keyword] [rs=status]    | 查询关键词的其它状态地图，`rs=`为状态触发词，1-5分别为ranked，Qualified，Loved，Pending，Graveyard |
 | osudl  | 下载地图上传到群                                             | [bmapid]                 | 下载地图，`bmapid`为地图组id，非单图id                       |
 
-**mode，0:std，1:taiko，2:ctb，3:mania**
+**`:mode`指令中的mode如下：`0`:std，`1`:taiko，`2`:ctb，`3`:mania**
 
 ## 即将实现
 
