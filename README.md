@@ -23,7 +23,7 @@
         lines = textContent.splitlines()
 }
 ```
-    
+
 **如果环境为Linux，请`pip install oppai`，并将`osu_pp.py`中`.oppai.oppai`改为`oppai`**
 
 **现版本pp计算模块更换为`pyttanko`，基本脱离`oppai`模块，现仅用于时长计算**
@@ -54,38 +54,37 @@
 6. 如果实在申请不到，可以联系我进行一对一教学（  QQ：806235364
 
 ## 指令说明
-
-- `[info]`查询自己的信息
-- `[info :mode]`查询自己在 mode 模式的信息
-- `[info user]`查询 user 的信息
-- `[info user :mode]`查询 user 在 mode 模式的信息
-- `[bind user]`绑定用户名 user
-- `[unbind]`解绑
-- `[update mode mode]`更改默认查询的模式
-- `[update icon]`更新自己头像和头图
-- `[recent]`查询自己最近游玩的成绩
-- `[recent :mode]`查询自己最近游玩 mode 模式的成绩
-- `[recent user]`查询 user 最近游玩的成绩
-- `[recent user :mode]`查询 user 最近游玩 mode 模式的成绩
-- `[score mapid]`查询自己在 mapid 的成绩
-- `[score mapid :mode]`查询自己在 mapid  mode 模式的成绩
-- `[score user mapid]`查询 user 在 mapid 的成绩
-- `[score user mapid :mode]`查询 user 在 mapid  mode 模式的成绩
-- `[map mapid]`查询 mapid 地图的信息
-- `[getbg mapid]`提取 mapid 地图的BG
-- `[bp num]`查询自己bp榜第 num 的成绩
-- `[bp user num]`查询 user bp榜第 num 的成绩
-- `[bp min-max]`查询自己bp榜第 min 到 max 的成绩
-- `[bp user min-max]`查询 user bp榜第 min 到 max 的成绩
-- `[bp num +DT,HD]`查询自己bp榜加`DT,HD`后的第 num 的成绩
-- `[bp user num +DT,HD]`查询 user bp榜加`DT,HD`后的第 num 的成绩
-- `[bp min-max +DT,HD]`查询自己bp榜加`DT,HD`后的第 min 到 max 的成绩
-- `[bp user min-max +DT,HD]`查询 user bp榜加`DT,HD`后的第 min 到 max 的成绩
-- `mode` : `0 `std, `1` taiko, `2` ctb, `3` mania
-- bp扩展 `bp`: std, `bp1`: taiko, `bp2`: ctb, `bp3`: mania
-
-**除`std`模式外，查询其它模式需带上`mode`**
-**`bp`指令加多mod的必须使用半角逗号**
+| 指令   | 功能                                                         | 可选参数                 | 说明                                                         |
+| :----- | :----------------------------------------------------------- | :----------------------- | :----------------------------------------------------------- |
+| info   | 查询信息                                                     | 无                       | 查询自己                                                     |
+|        |                                                              | [user]                   | 查询TA人                                                     |
+|        |                                                              | [:mode]                  | 查询自己其它模式                                             |
+|        |                                                              | [user] [:mode]           | 查询TA人其它模式，`:`为触发词                                |
+| bind   | 绑定                                                         | [user]                   | 绑定用户名                                                   |
+| unbind | 解绑                                                         | 无                       |                                                              |
+| update | 更改或更新                                                   | [mode] [:mode]           | 更改模式，`:`为触发词                                        |
+|        |                                                              | [icon]                   | 更新自己的头像和头图                                         |
+| recent | 查询最近游玩记录                                             | 无                       | 查询自己最近的游玩记录                                       |
+|        |                                                              | [user]                   | 查询TA人最近的游玩记录                                       |
+|        |                                                              | [:mode]                  | 查询自己最近游玩其它模式记录，`:`为触发词                    |
+|        |                                                              | [user] [:mode]           | 查询TA人最近游玩其它模式记录，`:`为触发词                    |
+| score  | 查询成绩                                                     | [mapid]                  | 查询地图成绩                                                 |
+|        |                                                              | [mapid] [:mode]          | 查询地图其它模式成绩，`:`为触发词                            |
+|        |                                                              | [user] [mapid]           | 查询TA人地图成绩                                             |
+|        |                                                              | [user] [mapid] [:mode]   | 查询TA人地图其它模式成绩，`:`为触发词                        |
+| *bp    | 查询bp榜成绩，可附带模式，1、2、3分别为taiko、ctb、mania，例：`bp3 1` | [num]                    | 查询bp成绩                                                   |
+|        |                                                              | [num] [+mods]            | 查询bp附加mods成绩，`+`为mods触发词，多mods之间使用半角逗号  |
+|        |                                                              | [user] [num]             | 查询TA人bp成绩                                               |
+|        |                                                              | [user] [num] [+mods]     | 查询TA人bp附加mods成绩，`+`为mods触发词，多mods之间使用半角逗号 |
+|        |                                                              | [min-max]                | 查询bp范围内成绩，最多10个                                   |
+|        |                                                              | [min-max] [+mods]        | 查询bp范围内成绩，最多10个，`+`为mods触发词，多mods之间使用半角逗号 |
+|        |                                                              | [user] [min-max]         | 查询TA人bp，`-`为范围触发词，最多10个                        |
+|        |                                                              | [user] [min-max] [+mods] | 查询TA人bp，`-`为范围触发词，最多10个，`+`为mods触发词，多mods之间使用半角逗号 |
+| map    | 查询地图的信息                                               | [mapid]                  | 查询地图信息                                                 |
+| getbg  | 提取背景                                                     | [mapid]                  | 提取地图信息                                                 |
+| *smap  | 查询地图，可附带模式，1、2、3分别为taiko、ctb、mania，例：`smap3 GHOST` | [keyword]                | 查询关键词的地图，默认搜索std模式ranked状态                  |
+|        |                                                              | [keyword] [rs=status]    | 查询关键词的其它状态地图，`rs=`为状态触发词，1-5分别为ranked，Qualified，Loved，Pending，Graveyard |
+| osudl  | 下载地图上传到群                                             | [bmapid]                 | 下载地图，`bmapid`为地图组id，非单图id                       |
 
 ## 即将实现
 
@@ -93,17 +92,27 @@
 
 ## 更新说明
 
+**2021-05-06**
+
+1. 新增地图搜索功能，指令：`[smap keyword]`，`keyword`为关键词，可多个，默认搜索std模式ranked状态
+
+2. 新增地图下载功能，指令：`[osudl bmapid]`，`bmapid`为地图组id，非单图id
+
 **2021-05-04**
+
 1. 支持`mania`模式pp计算
 
 **2021-05-02**
+
 1. 修复`map`指令查询非ranked图时出错的问题
 2. 修复`map`指令查询mania图时无max combo的问题
 
 **2021-04-27**
+
 1. 修复撒泼特错位
 2. 修复info的游玩时间
 3. 对比信息无法更新
 
 **2021-04-23**
+
 1. 船新版本的osu插件
