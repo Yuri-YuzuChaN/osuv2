@@ -5,8 +5,9 @@ from nonebot import get_bot
 import re, os
 
 from .sql import *
-from .draw import draw_info, draw_score, best_pfm, map_info, bindinfo, update_icon, get_map_bg, user
-from .api import *
+from .draw import *
+from .file import MapDownload
+from .api import get_access_token
 from .mods import get_mods_num
 
 sv = Service('osuv2', manage_priv=priv.ADMIN, enable_on_default=True)
@@ -14,6 +15,7 @@ helpimg = os.path.join(os.path.dirname(__file__), 'osufile', 'help.png')
 
 GM = {0 : 'osu', 1 : 'taiko', 2 : 'fruits', 3 : 'mania'}
 GMN = {0 : 'Std', 1 : 'Taiko', 2 : 'Ctb', 3 : 'Mania'}
+sayo = [1, 2, 4, 8, 16]
 esql = osusql()
 
 @sv.on_prefix(('info', 'INFO', 'Info'))
@@ -218,6 +220,43 @@ async def recent(bot, ev:CQEvent):
     else:
         await bot.send(ev, info, at_sender=True)
 
+@sv.on_prefix('smap')
+async def search(bot, ev:CQEvent):
+    word = ev.message.extract_plain_text().strip().split(' ')
+    mode = 1
+    status = 1
+    if not word:
+        await bot.finish(ev, '请输入查询地图的关键词', at_sender=True)
+    if len(word) != 1:
+        if word[0] == '1' or word[0] == '2' or word[0] == '3':
+            mode = sayo[int(word[0])]
+            del word[0]
+    if 'rs=' in word[-1]:
+        try:
+            us = int(word[-1][3:])
+            status = sayo[us-1]
+            if us > 0 and us < 6:
+                del word[-1]
+            else:
+                await bot.finish(ev, '请输入正确的rank状态', at_sender=True)
+        except:
+            await bot.finish(ev, '请输入正确的rank状态', at_sender=True)
+    keyword = " ".join(word)
+    info = await search_map('search', mode, status, keyword)
+    await bot.send(ev, info)
+
+@sv.on_prefix('osudl')
+async def osudl(bot, ev:CQEvent):
+    gid = ev.group_id
+    bmapid = ev.message.extract_plain_text().strip()
+    if not bmapid:
+        return
+    if not  bmapid.isdigit():
+        await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
+    file = await MapDownload(bmapid, True)
+    await bot.upload_group_file(group_id=gid, file=file[0], name=file[1])
+    os.remove(file[0])
+
 @sv.on_prefix(('bind', 'BIND', 'Bind'))
 async def bind(bot, ev:CQEvent):
     uid = ev.user_id
@@ -302,8 +341,6 @@ async def refresh_token_():
 @sv.scheduled_job('cron', hour='0')
 async def update_info():
     result = esql.get_all_id()
-    n = 0
-    for uid in result:
+    for n, uid in enumerate(result):
         await user(uid[0], True)
-        n+=1
-    print(f'已更新{n}位玩家数据')
+    print(f'已更新{n+1}位玩家数据')
