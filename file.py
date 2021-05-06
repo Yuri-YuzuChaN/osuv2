@@ -5,41 +5,43 @@ osufile = f'{osupath}/osufile/'
 mapfile = f'{osufile}map/'
 iconfile = f'{osufile}icon/'
 
-async def MapDownload(mapid):
+async def MapDownload(mapid, DL=False):
     # 判断是否存在该文件
     mapid = str(mapid)
-    for file in os.listdir(mapfile):
-        if mapid in file:
-            if os.path.exists(f'{mapfile}{file}'):
-                return f'{mapfile}{file}'
-        continue
-    else:
-        url = f'https://txy1.sayobot.cn/beatmaps/download/novideo/{mapid}'
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, allow_redirects = False) as re:
-                    sayo = re.headers['Location']
-        except:
-            print('Request Failed or Timeout')
-            return
-        filename = await get_osz(sayo, mapid)
-        filepath = mapfile + filename
-        # 解压下载的osz文件
-        myzip = zipfile.ZipFile(filepath)
-        mystr = myzip.filename.split(".")
-        myzip.extractall(mystr[0])
-        myzip.close()
-        end = ['mp3','wav','mp4','avi','mov','ogg','osb','flv']
-        # 删除其余不需要的文件
-        for root, dirs, files in os.walk(filepath[:-4], topdown=False):
-            for name in files:
-                for i in end:
-                    if name.endswith(i):
-                        os.remove(os.path.join(root, name))
-        # 删除下载osz文件
-        os.remove(filepath)
-        return filepath[:-4]
-        
+    if not DL:
+        for file in os.listdir(mapfile):
+            if mapid in file:
+                if os.path.exists(f'{mapfile}{file}'):
+                    return f'{mapfile}{file}'
+    url = f'https://txy1.sayobot.cn/beatmaps/download/novideo/{mapid}'
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, allow_redirects=False) as re:
+                sayo = re.headers['Location']
+                if DL:
+                    filename = await get_osz(sayo, mapid)
+                    return f'{mapfile}{filename}', filename
+    except:
+        print('Request Failed or Timeout')
+        return
+    filename = await get_osz(sayo, mapid)
+    filepath = mapfile + filename
+    # 解压下载的osz文件
+    myzip = zipfile.ZipFile(filepath)
+    mystr = myzip.filename.split(".")
+    myzip.extractall(mystr[0])
+    myzip.close()
+    end = ['mp3','wav','mp4','avi','mov','ogg','osb','flv']
+    # 删除其余不需要的文件
+    for root, dirs, files in os.walk(filepath[:-4], topdown=False):
+        for name in files:
+            for i in end:
+                if name.endswith(i):
+                    os.remove(os.path.join(root, name))
+    # 删除下载osz文件
+    os.remove(filepath)
+    return filepath[:-4]
+
 async def get_osz(sayo, mapid):
     try:
         print('Start Downloading Map')
@@ -106,16 +108,16 @@ async def get_project_img(project, url, uid, update=False):
     except Exception as e:
         return e
 
-def get_mode_img(mode, *diff):
+def get_mode_img(mode, diff=None):
     if diff:
         if mode == 0:
-            img = f'std_{diff[0]}.png'
+            img = f'std_{diff}.png'
         elif mode == 1:
-            img = f'taiko_{diff[0]}.png'
+            img = f'taiko_{diff}.png'
         elif mode == 2:
-            img = f'ctb_{diff[0]}.png'
+            img = f'ctb_{diff}.png'
         else:
-            img = f'mania_{diff[0]}.png'
+            img = f'mania_{diff}.png'
         return os.path.join(osufile, 'work', img)
     else:
         if mode == 0:
