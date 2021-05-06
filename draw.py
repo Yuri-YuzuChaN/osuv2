@@ -1,9 +1,9 @@
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
-import os, time
+import os
 
-from .api import get_api_info
+from .api import get_api_info, get_sayoapi_info
 from .file import *
 from .pp import *
 from .mods import *
@@ -112,6 +112,9 @@ def crop_bg(path, size):
     elif size == 'HI':
         fix_w = 1000
         fix_h = 400
+    elif size == 'MP':
+        fix_w = 1200
+        fix_h = 300
     #固定比例
     fix_scale = fix_h / fix_w
     #图片比例
@@ -171,6 +174,12 @@ def set_mod_list(json, mods):
             if num == mods:
                 vnum.append(index)
     return vnum
+
+def calc_song_len(len):
+    map_len = list(divmod(int(len), 60))
+    map_len[1] = map_len[1] if map_len[1] >= 10 else f'0{map_len[1]}'
+    music_len = f'{map_len[0]}:{map_len[1]}'
+    return music_len
 
 async def draw_info(id, mode):
     try:
@@ -290,11 +299,11 @@ async def draw_info(id, mode):
             w_n_pc = datatext(305, 720, 20, '{}{:.2f}'.format(op, value), Weiruan)
             im = draw_text(im, w_n_pc)
         #SS - A
-        gc_x = 493
-        for i in gc:
-            w_ss_a = datatext(gc_x, 675, 30, format(i, ","), Torus_Regular, anchor='mt')
+        # gc_x = 493
+        for gc_num, i in enumerate(gc):
+            w_ss_a = datatext(493 + 100 * gc_num, 675, 30, format(i, ","), Torus_Regular, anchor='mt')
             im = draw_text(im, w_ss_a)
-            gc_x+=100
+            # gc_x+=100
         #rank分
         w_r_score = datatext(935, 795, 40, format(r_score, ","), Torus_Regular, anchor='rt')
         im = draw_text(im, w_r_score)
@@ -417,7 +426,7 @@ async def draw_score(project, id, mode, **vkargs):
         supporter = user['is_supporter']
         name = user['username']
         if project == 'bp' or project == 'recent':
-            header = await get_api_info('info', id=uid, mode='osu')
+            header = await get_api_info('info', id)
             headericon = header['cover_url']
             grank = '--'
         #下载地图
@@ -463,21 +472,21 @@ async def draw_score(project, id, mode, **vkargs):
         im.alpha_composite(stars_img, (89, 105))
         #mods
         if mods:
-            mods_num = 332
-            for s_mods in mods:
+            # mods_num = 332
+            for mods_num, s_mods in enumerate(mods):
                 mods_bg = os.path.join(osufile, 'mods', f'{s_mods}.png')
                 mods_img = Image.open(mods_bg).convert('RGBA').resize((30, 20))
-                im.alpha_composite(mods_img, (mods_num, 160))
-                mods_num += 32
+                im.alpha_composite(mods_img, (332 + 36 * mods_num , 160))
+                # mods_num += 32
             ranking = ['XH', 'SH', 'A', 'B', 'C', 'D', 'F']
             if rank == 'X' or rank == 'S':
                 rank = rank + 'H'
         else:
             ranking = ['X', 'S', 'A', 'B', 'C', 'D', 'F']
         #成绩S-F
-        rank_num = 162
+        # rank_num = 162
         rank_ok = False
-        for i in ranking:
+        for rank_num, i in enumerate(ranking):
             rank_img = os.path.join(osufile, 'ranking', f'ranking-{i}.png')
             if rank_ok:
                 rank_b = Image.open(rank_img).convert('RGBA').resize((32, 16))
@@ -493,8 +502,8 @@ async def draw_score(project, id, mode, **vkargs):
                 if mods:
                     if rank == 'XH' or rank == 'SH':
                         rank = rank[:-1]
-            im.alpha_composite(rank_bg, (50, rank_num))
-            rank_num += 26
+            im.alpha_composite(rank_bg, (50, 162 + 26 * rank_num))
+            # rank_num += 26
         #成绩+acc
         score_acc = wedge_acc(acc * 100, uid)
         score_acc_bg = Image.open(score_acc).convert('RGBA').resize((384, 288))
@@ -728,6 +737,100 @@ async def map_info(mapid, mods):
     msg = ''.join(mapinfo)
     return musicinfo, msg
 
+async def search_map(project, mode, status, keyword):
+    info = await get_sayoapi_info(project, mode, status, keyword)
+    if info['status'] == -1:
+        return '未查询到地图'
+    elif isinstance(info, str):
+        return info
+    try:
+        num = len(info['data'])
+        #根据结果定高度
+        im_h = num * 303 - 3 if num != 1 else num * 300
+        im = Image.new('RGBA', (1200, im_h))
+        for infonum, map in enumerate(info['data']):
+            #每个结果增加高度
+            pnum = 303 * infonum
+            sid = map['sid']
+            title = map['title']
+            artist = map['artist']
+            mapper = map['creator']
+            #查图
+            bmapinfo = await get_sayoapi_info('mapinfo', bmapid=sid)
+            mapinfo = bmapinfo['data']
+            apptime = mapinfo['approved_date']
+            # source = mapinfo['source']
+            bpm = mapinfo['bpm']
+            gmap = mapinfo['bid_data']
+            mapid = gmap[0]['bid']
+            songlen = gmap[0]['length']
+            #获取背景
+            coverurl = f'https://assets.ppy.sh/beatmaps/{sid}/covers/cover@2x.jpg'
+            cover = await get_project_img('cover', coverurl, mapid)
+            #裁切
+            cover_crop = crop_bg(cover, 'MP')
+            cover_gb = cover_crop.filter(ImageFilter.GaussianBlur(1))
+            cover_img = ImageEnhance.Brightness(cover_gb).enhance(2 / 4.0)
+            im.alpha_composite(cover_img, (0, pnum))
+            #mode图片
+            gmap = sorted(gmap, key=lambda k: k['star'], reverse=False)
+            for num, cmap in enumerate(gmap):
+                if num < 10:
+                    diff = round(cmap['star'], 2)
+                    m_mode = cmap['mode']
+                    diffname = stars_diff(diff)
+                    mode_bg = get_mode_img(m_mode, diffname)
+                    mode_img = Image.open(mode_bg).convert('RGBA').resize((50, 50))
+                    im.alpha_composite(mode_img, (25 + 60 * num, 215  + pnum))
+                    w_diff = datatext(50 + 60 * num, 280 + pnum, 20, diff, Torus_SemiBold, anchor='mm')
+                    im = draw_text(im, w_diff)
+                else:
+                    plusnum = f'+{num-9}'
+            if num >= 10:
+                w_mode_num = datatext(650, 250 + pnum, 25, plusnum, Torus_SemiBold)
+                im = draw_text(im, w_mode_num)
+            #曲名
+            w_title = datatext(25, 40 + pnum, 40, title, Torus_SemiBold)
+            im = draw_text(im, w_title)
+            #曲师
+            w_artist = datatext(25, 75 + pnum, 20, artist, Torus_SemiBold)
+            im = draw_text(im, w_artist)
+            #mapper
+            w_mapper = datatext(25, 110 + pnum, 20, f'mapper by {mapper}', Torus_SemiBold)
+            im = draw_text(im, w_mapper)
+            #rank时间
+            if apptime == -1:
+                apptime = 'No Ranked'
+            else:
+                datearray = datetime.utcfromtimestamp(apptime)
+                apptime = (datearray + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
+            w_apptime = datatext(25, 145 + pnum, 20, f'Approved Time: {apptime}', Torus_SemiBold)
+            im = draw_text(im, w_apptime)
+            #来源
+            # if source == '':
+            #     source = 'Nothing'
+            # w_source = datatext(25, 180 + pnum, 20, f'Source: {source}', Torus_SemiBold)
+            # im = draw_text(im, w_source)
+            #bpm
+            w_bpm = datatext(1150, 110 + pnum, 20, f'BPM: {bpm}', Torus_SemiBold, anchor='rt')
+            im = draw_text(im, w_bpm)
+            #曲长
+            music_len = calc_song_len(songlen)
+            w_music_len = datatext(1150, 145 + pnum, 20, f'lenght: {music_len}', Torus_SemiBold, anchor='rt')
+            im = draw_text(im, w_music_len)
+            #bmapid
+            w_bmapid = datatext(1150, 20 + pnum, 20, f'Bmapid: {sid}', Torus_SemiBold, anchor='rt')
+            im = draw_text(im, w_bmapid)
+            ims = Image.new('RGBA', (1200, 3), (255, 255, 255, 255))
+            im.alpha_composite(ims, (0, 303 * (infonum + 1) - 3))
+
+        outputimage_path = os.path.join(osufile, 'output', f'search.png')
+        im.save(outputimage_path)
+        msg = f'[CQ:image,file=file:///{outputimage_path}]' 
+    except Exception as e:
+        return f'Error: {e}'
+    return msg
+
 async def bindinfo(project, id, qid):
     esql = osusql()
     info = await get_api_info(project, id, GM[0])
@@ -745,14 +848,14 @@ async def bindinfo(project, id, qid):
 async def update_icon(project, id, mode):
     info = await get_api_info(project, id, mode)
     if not info:
-        return '为查询到该玩家'
+        return '未查询到该玩家'
     elif isinstance(info, str):
         return info
     icon = info['avatar_url']
     header = info['cover_url']
     icon_t = await get_project_img('icon', icon, id, True)
     header_t = await get_project_img('header', header, id, True)
-    if icon_t and header:
+    if icon_t and header_t:
         return '头像和头图更新完毕'
     else:
         return '头像和头图更新失败'
