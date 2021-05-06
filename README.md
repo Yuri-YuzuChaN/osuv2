@@ -85,6 +85,7 @@
 | *smap  | 查询地图，可附带模式，1、2、3分别为taiko、ctb、mania，例：`smap3 GHOST` | [keyword]                | 查询关键词的地图，默认搜索std模式ranked状态                  |
 |        |                                                              | [keyword] [rs=status]    | 查询关键词的其它状态地图，`rs=`为状态触发词，1-5分别为ranked，Qualified，Loved，Pending，Graveyard |
 | osudl  | 下载地图上传到群                                             | [bmapid]                 | 下载地图，`bmapid`为地图组id，非单图id                       |
+
 **mode，0:std，1:taiko，2:ctb，3:mania**
 
 ## 即将实现
