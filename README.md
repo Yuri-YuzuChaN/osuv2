@@ -62,7 +62,7 @@
 |        |                                                              | [user] [:mode]           | 查询TA人其它模式，`:`为触发词                                |
 | bind   | 绑定                                                         | [user]                   | 绑定用户名                                                   |
 | unbind | 解绑                                                         | 无                       |                                                              |
-| update | 更改或更新                                                   | [mode] [:mode]           | 更改模式，`:`为触发词                                        |
+| update | 更改或更新                                                   | mode [mode]           | 更改模式，`:`为触发词                                        |
 |        |                                                              | [icon]                   | 更新自己的头像和头图                                         |
 | recent | 查询最近游玩记录                                             | 无                       | 查询自己最近的游玩记录                                       |
 |        |                                                              | [user]                   | 查询TA人最近的游玩记录                                       |
@@ -86,7 +86,7 @@
 |        |                                                              | [keyword] [rs=status]    | 查询关键词的其它状态地图，`rs=`为状态触发词，1-5分别为ranked，Qualified，Loved，Pending，Graveyard |
 | osudl  | 下载地图上传到群                                             | [bmapid]                 | 下载地图，`bmapid`为地图组id，非单图id                       |
 
-**`:mode`指令中的mode如下：`0`:std，`1`:taiko，`2`:ctb，`3`:mania**
+**`:mode`参数中的mode如下：`0`:std，`1`:taiko，`2`:ctb，`3`:mania**
 
 ## 即将实现
 
@@ -97,7 +97,6 @@
 **2021-05-06**
 
 1. 新增地图搜索功能，指令：`[smap keyword]`，`keyword`为关键词，可多个，默认搜索std模式ranked状态
-
 2. 新增地图下载功能，指令：`[osudl bmapid]`，`bmapid`为地图组id，非单图id
 
 **2021-05-04**
