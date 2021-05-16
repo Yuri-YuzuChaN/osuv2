@@ -4,6 +4,7 @@ osupath = os.path.dirname(__file__)
 osufile = f'{osupath}/osufile/'
 mapfile = f'{osufile}map/'
 iconfile = f'{osufile}icon/'
+badges = f'{osufile}badges/'
 
 async def MapDownload(mapid, DL=False):
     # 判断是否存在该文件
@@ -18,12 +19,12 @@ async def MapDownload(mapid, DL=False):
         async with aiohttp.ClientSession() as session:
             async with session.get(url, allow_redirects=False) as re:
                 sayo = re.headers['Location']
-                if DL:
-                    filename = await get_osz(sayo, mapid)
-                    return f'{mapfile}{filename}', filename
     except:
         print('Request Failed or Timeout')
         return
+    if DL:
+        filename = await get_osz(sayo, mapid, True)
+        return f'{mapfile}{filename}', filename
     filename = await get_osz(sayo, mapid)
     filepath = mapfile + filename
     # 解压下载的osz文件
@@ -42,12 +43,14 @@ async def MapDownload(mapid, DL=False):
     os.remove(filepath)
     return filepath[:-4]
 
-async def get_osz(sayo, mapid):
+async def get_osz(sayo, mapid, DL=False):
     try:
         print('Start Downloading Map')
         async with aiohttp.ClientSession() as session:
             async with session.get(sayo) as req:
                 filename = f'{mapid}.osz'
+                if DL:
+                    filename = req.content_disposition.filename
                 chunk = await req.read()
                 open(f'{mapfile}{filename}', 'wb').write(chunk)
         print('Map Download Complete')
@@ -83,7 +86,7 @@ def get_picture(path):
     for i in result:
         return i.groups()[0]
 
-async def get_project_img(project, url, uid, update=False):
+async def get_project_img(project, url, uid=0, update=False):
     uid = str(uid)
     if project == 'cover':
         name = f'{uid}_cover.png'
@@ -91,21 +94,34 @@ async def get_project_img(project, url, uid, update=False):
         name = f'{uid}_icon.png'
     elif project == 'header':
         name = f'{uid}_headericon.png'
+    elif project == 'badges':
+        result = re.match(r'https://assets.ppy.sh/profile-badges/(.+)', url)
+        name = result.group(1)
+    if project == 'badges':
+        path = badges + name
+    else:
+        path = iconfile  + name
     if not update:
-        for file in os.listdir(iconfile):
+        if project == 'badges':
+            lpath = badges
+        else:
+            lpath = iconfile
+        for file in os.listdir(lpath):
             if name in file:
-                return iconfile + name
+                return path
     try:
         if 'avatar-guest.png' in url:
             url = 'https://osu.ppy.sh/images/layout/avatar-guest.png'
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as req:
                 chunk = await req.read()
-                open(iconfile + name, 'wb').write(chunk)
+                open(path, 'wb').write(chunk)
         if update:
             return True
-        return iconfile + name
+        return path
     except Exception as e:
+        if project == 'cover':
+            return False
         return e
 
 def get_mode_img(mode, diff=None):
