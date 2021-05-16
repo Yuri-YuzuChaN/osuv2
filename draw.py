@@ -115,6 +115,9 @@ def crop_bg(path, size):
     elif size == 'MP':
         fix_w = 1200
         fix_h = 300
+    elif size == 'MB':
+        fix_w = 1200
+        fix_h = 600
     #固定比例
     fix_scale = fix_h / fix_w
     #图片比例
@@ -224,10 +227,10 @@ async def draw_info(id, mode):
                 n_pc = i[6]
                 n_count = i[7]
         else:
-            n_crank, n_grank, n_pp, n_acc, n_pc, n_count = 0, 0, 0, 0, 0, 0
+            n_crank, n_grank, n_pp, n_acc, n_pc, n_count = crank, grank, pp, acc, pc, count
         #新建
         info_bg = os.path.join(osufile, 'info.png')
-        im = Image.new('RGBA', (1000, 1222))
+        im = Image.new('RGBA', (1000, 1322))
         #获取头图，头像，地区，状态，supporter
         user_header = await get_project_img('header', coverurl, uid)
         user_icon = await get_project_img('icon', icon, uid)
@@ -247,8 +250,25 @@ async def draw_info(id, mode):
         icon_bg = Image.open(user_icon).convert('RGBA').resize((300, 300))
         icon_img = draw_fillet(icon_bg, 25)
         im.alpha_composite(icon_img, (50, 148))
-        #模式
-        
+        #奖牌
+        if badges:
+            badges_num = len(badges)
+            for num, _ in enumerate(badges):
+                if badges_num <= 9:
+                    L = 50 + 100 * num
+                    T = 530
+                elif num < 9:
+                    L = 50 + 100 * num
+                    T = 506
+                else:
+                    L = 50 + 100 * (num - 9)
+                    T = 554
+                badges_path = await get_project_img('badges', _['image_url'])
+                badges_img = Image.open(badges_path).convert('RGBA').resize((86, 40))
+                im.alpha_composite(badges_img, (L, T))
+        else:
+            w_badges = datatext(500, 545, 35, "You don't have a badge", Torus_Regular, anchor='mm')
+            im = draw_text(im, w_badges)
         #地区
         country_bg = Image.open(country).convert('RGBA').resize((80, 54))
         im.alpha_composite(country_bg, (400, 394))
@@ -259,12 +279,12 @@ async def draw_info(id, mode):
         #经验
         if progress != 0:  
             exp_left_bg = Image.open(exp_l).convert('RGBA')
-            im.alpha_composite(exp_left_bg, (50, 544))
+            im.alpha_composite(exp_left_bg, (50, 646))
             exp_width = progress * 7 - 3
             exp_center_bg = Image.open(exp_c).convert('RGBA').resize((exp_width ,10))
-            im.alpha_composite(exp_center_bg, (54, 544))
+            im.alpha_composite(exp_center_bg, (54, 646))
             exp_right_bg = Image.open(exp_r).convert('RGBA')
-            im.alpha_composite(exp_right_bg, (int(54 + exp_width), 544))
+            im.alpha_composite(exp_right_bg, (int(54 + exp_width), 646))
         #模式
         w_mode = datatext(935, 50, 45, GMN[mode], Torus_Regular, anchor='rm')
         im = draw_text(im, w_mode)
@@ -279,57 +299,57 @@ async def draw_info(id, mode):
             w_n_crank = datatext(610, 448, 25, '({}{:,})'.format(op, value), Weiruan, anchor='lb')
             im = draw_text(im, w_n_crank)
         #等级
-        w_current = datatext(900, 548, 25, current, Torus_Regular, anchor='mm')
+        w_current = datatext(900, 650, 25, current, Torus_Regular, anchor='mm')
         im = draw_text(im, w_current)
         #经验百分比
-        w_progress = datatext(750, 560, 20, f'{progress}%', Torus_Regular, anchor='rt')
+        w_progress = datatext(750, 660, 20, f'{progress}%', Torus_Regular, anchor='rt')
         im = draw_text(im, w_progress)
         #全球排名
-        w_grank = datatext(55, 685, 35, f'#{format(grank, ",")}', Torus_Regular)
+        w_grank = datatext(55, 785, 35, f'#{format(grank, ",")}', Torus_Regular)
         im = draw_text(im, w_grank)
         op, value = info_calc(grank, n_grank, rank=True)
         if value != 0:
-            w_n_grank = datatext(65, 720, 20, '{}{:,}'.format(op, value), Weiruan)
+            w_n_grank = datatext(65, 820, 20, '{}{:,}'.format(op, value), Weiruan)
             im = draw_text(im, w_n_grank)
         #pp
-        w_pp = datatext(295, 685, 35, format(pp, ","), Torus_Regular)
+        w_pp = datatext(295, 785, 35, format(pp, ","), Torus_Regular)
         im = draw_text(im, w_pp)
         op, value = info_calc(pp, n_pp, pp=True)
         if value != 0:
-            w_n_pc = datatext(305, 720, 20, '{}{:.2f}'.format(op, value), Weiruan)
+            w_n_pc = datatext(305, 820, 20, '{}{:.2f}'.format(op, value), Weiruan)
             im = draw_text(im, w_n_pc)
         #SS - A
         # gc_x = 493
         for gc_num, i in enumerate(gc):
-            w_ss_a = datatext(493 + 100 * gc_num, 675, 30, format(i, ","), Torus_Regular, anchor='mt')
+            w_ss_a = datatext(493 + 100 * gc_num, 775, 30, format(i, ","), Torus_Regular, anchor='mt')
             im = draw_text(im, w_ss_a)
             # gc_x+=100
         #rank分
-        w_r_score = datatext(935, 795, 40, format(r_score, ","), Torus_Regular, anchor='rt')
+        w_r_score = datatext(935, 895, 40, format(r_score, ","), Torus_Regular, anchor='rt')
         im = draw_text(im, w_r_score)
         #acc
         op, value = info_calc(acc, n_acc)
         t_acc = '{:.2f}%({}{:.2f}%)'.format(acc, op, value) if value != 0 else '{:.2f}%'.format(acc)
-        w_acc = datatext(935, 865, 40, t_acc, Torus_Regular, anchor='rt')
+        w_acc = datatext(935, 965, 40, t_acc, Torus_Regular, anchor='rt')
         im = draw_text(im, w_acc)
         #游玩次数
         op, value = info_calc(pc, n_pc)
         t_pc = '{:,}({}{:,})'.format(pc, op, value) if value != 0 else format(pc, ",")
-        w_pc = datatext(935, 935, 40, t_pc, Torus_Regular, anchor='rt')
+        w_pc = datatext(935, 1035, 40, t_pc, Torus_Regular, anchor='rt')
         im = draw_text(im, w_pc)
         #总分
-        w_t_score = datatext(935, 1005, 40, format(t_score, ","), Torus_Regular, anchor='rt')
+        w_t_score = datatext(935, 1105, 40, format(t_score, ","), Torus_Regular, anchor='rt')
         im = draw_text(im, w_t_score)
         #总命中
         op, value = info_calc(count, n_count)
         t_count = '{:,}({}{:,})'.format(count, op, value) if value != 0 else format(count, ",")
-        w_conut = datatext(935, 1075, 40, t_count, Torus_Regular, anchor='rt')
+        w_conut = datatext(935, 1175, 40, t_count, Torus_Regular, anchor='rt')
         im = draw_text(im, w_conut) 
         #游玩时间
         sec = timedelta(seconds = play_time)
         d_time = datetime(1, 1, 1) + sec
         t_time = "%dd %dh %dm %ds" % (sec.days, d_time.hour, d_time.minute, d_time.second)
-        w_name = datatext(935, 1145, 40, t_time, Torus_Regular, anchor='rt')
+        w_name = datatext(935, 1245, 40, t_time, Torus_Regular, anchor='rt')
         im = draw_text(im, w_name)
         #输出
         outputimage_path = os.path.join(osufile, 'output', f'info_{uid}.png')
@@ -339,7 +359,7 @@ async def draw_info(id, mode):
         return f'Error: {e}'
     return msg
 
-async def draw_score(project, id, mode, **vkargs):
+async def draw_score(project, id, mode, **kwargs):
     try:
         if project == 'recent':
             info = await get_api_info(project, id, mode)
@@ -354,9 +374,9 @@ async def draw_score(project, id, mode, **vkargs):
                 return '未查询到bp成绩'
             elif isinstance(info, str):
                 return info
-            bp = vkargs['bp']
+            bp = kwargs['bp']
             try:
-                setmods = get_mods_num(vkargs['mods'])
+                setmods = get_mods_num(kwargs['mods'])
                 modslist = set_mod_list(info, setmods)
                 if not modslist:
                     return '没有在bp上查询到开启该mod的成绩'
@@ -364,7 +384,7 @@ async def draw_score(project, id, mode, **vkargs):
             except KeyError:
                 userscore = info[bp-1]
         elif project == 'score':
-            info = await get_api_info(project, id, mode, mapid=vkargs['mapid'])
+            info = await get_api_info(project, id, mode, mapid=kwargs['mapid'])
             if not info:
                 return '未查询到该地图的成绩'
             elif isinstance(info, str):
@@ -677,65 +697,123 @@ async def map_info(mapid, mods):
         return '未查询到该地图信息'
     if isinstance(info, str): 
         return info
-    msg = ''
-    mapinfo = []
-    diff = info['difficulty_rating']
-    mode = info['mode']
-    status = info['status']
-    total_len = info['total_length']
-    version = info['version']
-    bmapid = info['beatmapset_id']
-    bpm = info['bpm']
-    od = info['accuracy']
-    ar = info['ar']
-    cs = info['cs']
-    hp = info['drain']
-    bmap = info['beatmapset']
-    artist = bmap['artist_unicode']
-    title = bmap['title_unicode']
-    creator = bmap['creator']
-    source = bmap['source']
-    cover = bmap['covers']['list@2x']
-    music = bmap['preview_url']
-    ranked_date = bmap['ranked_date']
-    if not source:
-        source = 'Nothing'
-    if info['mode_int'] == 3:
-        map_cb = 'No MaxCombo'
-    else:
-        map_cb = info['max_combo']
-
-    dirpath = await MapDownload(bmapid)
-    version_osu = get_file(dirpath, mapid, version)
-    if mode == 'osu':
-        map_pp = calc_acc_pp(version_osu, mods)[5]
-    else:
-        map_pp = 'Std Only'
-
-    map_len = list(divmod(int(total_len), 60))
-    map_len[1] = map_len[1] if map_len[1] >= 10 else f'0{map_len[1]}'
-    music_len = f'{map_len[0]}:{map_len[1]}'
-
-    if ranked_date:
-        old_time = datetime.strptime(ranked_date.replace('+00:00', ''), '%Y-%m-%dT%H:%M:%S')
-        new_time = (old_time + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
-    else:
-        new_time = 'No Ranked'
-
-    musicinfo = f'[CQ:record,file=https:{music}]'
-    mapinfo.append(f'[CQ:image,file={cover}]\n')
-    mapinfo.append(f'Query Map: {mapid} | Mode: {GMN[mode].capitalize()}\n')
-    mapinfo.append(f'Title: {title}\n')
-    mapinfo.append(f'Artist: {artist}\n')
-    mapinfo.append(f'Source: {source}\n')
-    mapinfo.append(f'Status: {status.capitalize()} | Song length: {music_len}\n')
-    mapinfo.append(f'Version: {version} | Mapper: {creator}\n')
-    mapinfo.append(f'Approved Time: {new_time}\n')
-    mapinfo.append(f'Stars: {diff} | CS: {cs} | AR: {ar} | OD: {od} | HP: {hp} | BPM: {bpm}\n')
-    mapinfo.append(f'Max Combo: {map_cb} | SS PP: {map_pp}')
-
-    msg = ''.join(mapinfo)
-    return musicinfo, msg
+    try:
+        mode = info['mode_int']
+        status = info['status']
+        total_len = info['total_length']
+        music_len = calc_song_len(total_len)
+        mapinfo = music_len, info['bpm'], info['count_circles'], info['count_sliders']
+        version = info['version']
+        bmapid = info['beatmapset_id']
+        mapdiff = info['cs'], info['drain'], info['accuracy'], info['ar'], info['difficulty_rating']
+        bmap = info['beatmapset']
+        # artist = bmap['artist_unicode']
+        # title = bmap['title_unicode']
+        artist = bmap['artist']
+        title = bmap['title']
+        creator = bmap['creator']
+        uid = bmap['user_id']
+        source = bmap['source']
+        cover = bmap['covers']['list@2x']
+        music = bmap['preview_url']
+        ranked_date = bmap['ranked_date']
+        if not source:
+            source = 'Nothing'
+        if mode == 3:
+            mapcb = 'No MaxCombo'
+        else:
+            mapcb = info['max_combo']
+        #获取地图
+        dirpath = await MapDownload(bmapid)
+        version_osu = get_file(dirpath, mapid, version)
+        #pp
+        if mode == 0:
+            pp = calc_acc_pp(version_osu, mods)[5]
+        elif mode == 3:
+            pp = calc_mania_pp(version_osu, mods, 1000000)
+        else:
+            pp = 'Std & Mania Only'
+        #计算时间
+        if ranked_date:
+            old_time = datetime.strptime(ranked_date.replace('+00:00', ''), '%Y-%m-%dT%H:%M:%S')
+            new_time = (old_time + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            new_time = 'No Ranked'
+        #BG做地图
+        im = Image.new('RGBA', (1200, 600))
+        cover = get_picture(version_osu)
+        cover_path = os.path.join(dirpath, cover)
+        cover_crop = crop_bg(cover_path, 'MB')
+        cover_img = ImageEnhance.Brightness(cover_crop).enhance(2 / 4.0)
+        im.alpha_composite(cover_img)
+        #获取地图info
+        BG = os.path.join(osufile, 'beatmapinfo.png')
+        map_bg = Image.open(BG).convert('RGBA')
+        im.alpha_composite(map_bg)
+        #模式
+        diff_name = stars_diff(mapdiff[4])
+        mode_bg = get_mode_img(mode, diff_name)
+        mode_img = Image.open(mode_bg).convert('RGBA').resize((50, 50))
+        im.alpha_composite(mode_img, (50, 100))
+        #cs - diff
+        for num, i in enumerate(mapdiff):
+            color = (255, 255, 255, 255)
+            if num == 4:
+                color = (255, 204, 34, 255)
+            diff_len = Image.new('RGBA', (int(250 * i / 10), 8), color)
+            im.alpha_composite(diff_len, (890, 426 + 35 * num))
+            w_diff = datatext(1170, 426 + 35 * num, 20, i, Torus_SemiBold, anchor='mm')
+            im = draw_text(im, w_diff)
+        #mapper
+        icon_url = f'https://a.ppy.sh/{uid}'
+        user_icon = await get_project_img('icon', icon_url, uid)
+        icon = Image.open(user_icon).convert('RGBA').resize((100, 100))
+        icon_img = draw_fillet(icon, 10)
+        im.alpha_composite(icon_img, (50, 400))
+        #mapid
+        w_mapid = datatext(950, 40, 25, f'Mapid: {mapid}', Torus_Regular, anchor='lm')
+        im = draw_text(im, w_mapid)
+        #版本
+        w_version = datatext(120, 125, 25, version, Torus_SemiBold, anchor='lm')
+        im = draw_text(im, w_version)
+        #曲名
+        w_title = datatext(50, 170, 30, title, Torus_SemiBold)
+        im = draw_text(im, w_title)
+        #曲师
+        w_artist = datatext(50, 210, 25, artist, Torus_Regular)
+        im = draw_text(im, w_artist)
+        #mapper
+        w_mapper_by = datatext(160, 400, 20, 'mapper by:', Torus_SemiBold)
+        im = draw_text(im, w_mapper_by)
+        w_mapper = datatext(160, 425, 20, creator, Torus_SemiBold)
+        im = draw_text(im, w_mapper, (0, 70, 226, 255))
+        #ranked时间
+        w_time_by = datatext(160, 460, 20, 'ranked by:', Torus_SemiBold)
+        im = draw_text(im, w_time_by)
+        w_time = datatext(160, 485, 20, new_time, Torus_SemiBold)
+        im = draw_text(im, w_time)
+        #状态
+        w_status = datatext(1100, 304, 20, status.capitalize(), Torus_SemiBold, anchor='mm')
+        im = draw_text(im, w_status)
+        #时长 - 滑条
+        for num, i in enumerate(mapinfo):
+            w_info = datatext(770 + 120 * num, 365, 20, i, Torus_Regular, anchor='lm')
+            im = draw_text(im, w_info, (255, 204, 34, 255))
+        #maxcb
+        w_mapcb = datatext(50, 570, 20, f'Max Combo: {mapcb}', Torus_SemiBold, anchor='lm')
+        im = draw_text(im, w_mapcb)
+        #pp
+        w_pp = datatext(300, 570, 20, f'SS PP: {pp}', Torus_SemiBold, anchor='lm')
+        im = draw_text(im, w_pp)
+        #音乐
+        musicinfo = f'[CQ:record,file=https:{music}]'
+        #输出
+        outputimage_path = os.path.join(osufile, 'output', 'info_map.png')
+        im.save(outputimage_path)
+        msg = f'[CQ:image,file=file:///{outputimage_path}]'
+        return musicinfo, msg
+    except Exception as e:
+        return f'Error:{e}'
 
 async def search_map(project, mode, status, keyword):
     info = await get_sayoapi_info(project, mode, status, keyword)
@@ -767,6 +845,8 @@ async def search_map(project, mode, status, keyword):
             #获取背景
             coverurl = f'https://assets.ppy.sh/beatmaps/{sid}/covers/cover@2x.jpg'
             cover = await get_project_img('cover', coverurl, mapid)
+            if not cover:
+                cover = os.path.join(osufile, 'work', 'mapbg.png')
             #裁切
             cover_crop = crop_bg(cover, 'MP')
             cover_gb = cover_crop.filter(ImageFilter.GaussianBlur(1))
@@ -824,7 +904,7 @@ async def search_map(project, mode, status, keyword):
             ims = Image.new('RGBA', (1200, 3), (255, 255, 255, 255))
             im.alpha_composite(ims, (0, 303 * (infonum + 1) - 3))
 
-        outputimage_path = os.path.join(osufile, 'output', f'search.png')
+        outputimage_path = os.path.join(osufile, 'output', 'search.png')
         im.save(outputimage_path)
         msg = f'[CQ:image,file=file:///{outputimage_path}]' 
     except Exception as e:
