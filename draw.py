@@ -786,7 +786,7 @@ async def map_info(mapid, mods):
         w_mapper_by = datatext(160, 400, 20, 'mapper by:', Torus_SemiBold)
         im = draw_text(im, w_mapper_by)
         w_mapper = datatext(160, 425, 20, creator, Torus_SemiBold)
-        im = draw_text(im, w_mapper, (0, 70, 226, 255))
+        im = draw_text(im, w_mapper)
         #ranked时间
         w_time_by = datatext(160, 460, 20, 'ranked by:', Torus_SemiBold)
         im = draw_text(im, w_time_by)
