@@ -47,7 +47,7 @@ async def info(bot, ev:CQEvent):
             id = ' '.join(msg[:msg_len-1])
             mode = int(msg[-1][1])
         else:
-            id = ' '.join(msg[:msg_len-1])
+            id = ' '.join(msg[:msg_len])
             mode = 0
     
     info = await draw_info(id, GM[mode])
@@ -82,7 +82,7 @@ async def recent(bot, ev:CQEvent):
             id = ' '.join(msg[:msg_len-1])
             mode = int(msg[-1][1])
         else:
-            id = ' '.join(msg[:msg_len-1])
+            id = ' '.join(msg[:msg_len])
             mode = 0
     
     info = await draw_score('recent', id, GM[mode])
@@ -94,6 +94,8 @@ async def score(bot, ev:CQEvent):
     msg = ev.message.extract_plain_text().strip().split(' ')
     if '' in msg:
         msg.remove('')
+    if not msg:
+        await bot.finish(ev, '请输入正确的地图id', at_sender=True)
     result = esql.get_id_mod(uid)
     msg_len = len(msg)
     if msg_len == 1:
@@ -125,13 +127,17 @@ async def score(bot, ev:CQEvent):
             id = ' '.join(msg[:msg_len-2])
             mapid = msg[-2]
             mode = int(msg[-1][1])
+        elif msg[-1].isdigit():
+            id = ' '.join(msg[:msg_len-1])
+            mapid = msg[-1]
+            mode = 0
         else:
             await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
     
     info = await draw_score('score', id, GM[mode], mapid=mapid)
     await bot.send(ev, info, at_sender=True)
 
-@sv.on_prefix('bp')
+@sv.on_prefix(('bp', 'BP', 'Bp'))
 async def bp(bot, ev:CQEvent):
     uid = ev.user_id
     msg = ev.message.extract_plain_text().strip().split(' ')
@@ -140,6 +146,8 @@ async def bp(bot, ev:CQEvent):
     bp = ''
     if '' in msg:
         msg.remove('')
+    if not msg:
+        await bot.finish(ev, '请输入正确的参数', at_sender=True)
     if '+' in msg[-1]:
         msg[-1] = msg[-1].upper()
         mods = msg[-1][1:].split(',')
@@ -206,6 +214,10 @@ async def bp(bot, ev:CQEvent):
 async def recent(bot, ev:CQEvent):
     mapid = ev.message.extract_plain_text().strip().split(' ')
     mods = 0
+    if '' in mapid:
+        mapid.remove('')
+    if not mapid:
+        await bot.finish(ev, '请输入查询地图id', at_sender=True)
     if '+' in mapid[-1]:
         mods = get_mods_num(mapid[-1][1:].split(','))
         del mapid[-1]
@@ -220,11 +232,13 @@ async def recent(bot, ev:CQEvent):
     else:
         await bot.send(ev, info, at_sender=True)
 
-@sv.on_prefix('smap')
+@sv.on_prefix(('smap', 'SMAP', 'Smap'))
 async def search(bot, ev:CQEvent):
     word = ev.message.extract_plain_text().strip().split(' ')
     mode = 1
     status = 1
+    if '' in word:
+        word.remove('')
     if not word:
         await bot.finish(ev, '请输入查询地图的关键词', at_sender=True)
     if len(word) != 1:
@@ -245,13 +259,13 @@ async def search(bot, ev:CQEvent):
     info = await search_map('search', mode, status, keyword)
     await bot.send(ev, info)
 
-@sv.on_prefix('osudl')
+@sv.on_prefix(('osudl', 'Osudl', 'OSUDL'))
 async def osudl(bot, ev:CQEvent):
     gid = ev.group_id
     bmapid = ev.message.extract_plain_text().strip()
     if not bmapid:
         return
-    if not  bmapid.isdigit():
+    if not bmapid.isdigit():
         await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
     file = await MapDownload(bmapid, True)
     await bot.upload_group_file(group_id=gid, file=file[0], name=file[1])
@@ -318,7 +332,7 @@ async def recent(bot, ev:CQEvent):
         botmsg = '参数错误，请输入正确的参数'
     await bot.send(ev, botmsg, at_sender=True)
 
-@sv.on_prefix('getbg')
+@sv.on_prefix(('getbg', 'Getbg', 'GETBG'))
 async def get_bg(bot, ev:CQEvent):
     id = ev.message.extract_plain_text().strip()
     if not id:
