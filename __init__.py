@@ -313,9 +313,7 @@ async def recent(bot, ev:CQEvent):
             mode = int(msg[1])
         except:
             await bot.finish(ev, '请输入更改的模式！', at_sender=True)
-        if not mode.isdigit():
-            await bot.finish(ev, '请输入更改的模式', at_sender=True)
-        elif mode == 0 or mode == 1 or mode == 2 or mode == 3:
+        if mode == 0 or mode == 1 or mode == 2 or mode == 3:
             result = esql.update_mode(uid, mode)
             if result:
                 botmsg = f'已将默认模式更改为 {GMN[mode]}'
