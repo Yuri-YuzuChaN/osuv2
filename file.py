@@ -1,10 +1,16 @@
 import aiohttp, os, re, zipfile, aiohttp
 
-osupath = os.path.dirname(__file__)
-osufile = f'{osupath}/osufile/'
-mapfile = f'{osufile}map/'
-iconfile = f'{osufile}icon/'
-badges = f'{osufile}badges/'
+osufile = os.path.join(os.path.dirname(__file__), 'osufile')
+mapfile = os.path.join(osufile, 'map')
+iconfile = os.path.join(osufile, 'icon')
+badges = os.path.join(osufile, 'badges')
+coverfile = os.path.join(osufile, 'cover')
+
+for item in ['badges', 'cover', 'icon', 'map', 'output']:
+    RES = os.path.join(osufile, item)
+    if not os.path.exists(RES):
+        os.makedirs(RES)
+        print(f'{item.capitalize()} Floder Created Successfully')
 
 async def MapDownload(mapid, DL=False):
     # 判断是否存在该文件
@@ -12,8 +18,8 @@ async def MapDownload(mapid, DL=False):
     if not DL:
         for file in os.listdir(mapfile):
             if mapid in file:
-                if os.path.exists(f'{mapfile}{file}'):
-                    return f'{mapfile}{file}'
+                if os.path.exists(os.path.join(mapfile, file)):
+                    return os.path.join(mapfile, file)
     url = f'https://txy1.sayobot.cn/beatmaps/download/novideo/{mapid}'
     try:
         async with aiohttp.ClientSession() as session:
@@ -24,9 +30,9 @@ async def MapDownload(mapid, DL=False):
         return
     if DL:
         filename = await get_osz(sayo, mapid, True)
-        return f'{mapfile}{filename}', filename
+        return os.path.join(mapfile, filename), filename
     filename = await get_osz(sayo, mapid)
-    filepath = mapfile + filename
+    filepath = os.path.join(mapfile, filename)
     # 解压下载的osz文件
     myzip = zipfile.ZipFile(filepath)
     mystr = myzip.filename.split(".")
@@ -52,31 +58,31 @@ async def get_osz(sayo, mapid, DL=False):
                 if DL:
                     filename = req.content_disposition.filename
                 chunk = await req.read()
-                open(f'{mapfile}{filename}', 'wb').write(chunk)
+                open(os.path.join(mapfile, filename), 'wb').write(chunk)
         print('Map Download Complete')
         return filename
     except:
         print('Map Download Failed')
-        return 
+        return
 
 def get_file(path, mapid, version):
     for file in os.listdir(path):
         if '.osu' in file:
-            with open(f'{path}/{file}', 'r', encoding='utf-8') as f:
+            with open(os.path.join(path, file), 'r', encoding='utf-8') as f:
                 text = f.read()
             result = re.finditer(r'BeatmapID:(.+)', text)
             try:
                 for i in result:
                     rmapid = i.groups()[0]
                 if str(mapid) == rmapid:
-                    filepath = f'{path}/{file}'
+                    filepath = os.path.join(path, file)
                     return filepath
             except:
                 continue
     else:
         for file in os.listdir(path):
             if version in file:
-                filepath = f'{path}/{file}'
+                filepath = os.path.join(path, file)
                 return filepath
 
 def get_picture(path):
@@ -98,9 +104,11 @@ async def get_project_img(project, url, uid=0, update=False):
         result = re.match(r'https://assets.ppy.sh/profile-badges/(.+)', url)
         name = result.group(1)
     if project == 'badges':
-        path = badges + name
+        path = os.path.join(badges, name)
+    elif project == 'cover':
+        path = os.path.join(coverfile, name)
     else:
-        path = iconfile  + name
+        path = os.path.join(iconfile, name)
     if not update:
         if project == 'badges':
             lpath = badges
@@ -121,7 +129,7 @@ async def get_project_img(project, url, uid=0, update=False):
         return path
     except Exception as e:
         if project == 'cover':
-            return False
+            return os.path.join(osufile, 'work', 'mapbg.png')
         return e
 
 def get_mode_img(mode, diff=None):
@@ -144,4 +152,4 @@ def get_mode_img(mode, diff=None):
             img = 'pfm_ctb.png'
         else:
             img = 'pfm_mania.png'
-        return os.path.join(osupath, 'osufile', img)
+        return os.path.join(osufile, img)
