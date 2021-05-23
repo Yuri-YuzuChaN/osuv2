@@ -20,119 +20,193 @@ esql = osusql()
 
 @sv.on_prefix(('info', 'INFO', 'Info'))
 async def info(bot, ev:CQEvent):
-    uid = ev.user_id
-    msg = ev.message.extract_plain_text().strip().split(' ')
-    if '' in msg:
-        msg.remove('')
-    result = esql.get_id_mod(uid)
-    msg_len = len(msg)
-    if not msg:
-        if not result:
-            await bot.finish(ev, '该账号尚未绑定，请输入 bind 用户名 绑定账号', at_sender=True)
-        for i in result:
-            id = i[0]
-            mode = i[1]
-    elif msg_len == 1:
-        if ':' in msg[0]:
+    msg = ev.message
+    if msg[0]['type'] == 'text':
+        uid = ev.user_id
+        result = esql.get_id_mod(uid)
+        text = msg[0]['data']['text']
+        if not text:
             if not result:
                 await bot.finish(ev, '该账号尚未绑定，请输入 bind 用户名 绑定账号', at_sender=True)
             for i in result:
                 id = i[0]
-            mode = int(msg[0][1])
+                mode = i[1]
         else:
-            id = msg[0]
-            mode = 0
+            msglist = text.strip().split(' ')
+            if '' in msglist:
+                msglist.remove('')
+            mlen = len(msglist)
+            if ':' in msglist[-1] and mlen == 1:
+                if not result:
+                    await bot.finish(ev, '该账号尚未绑定，请输入 bind 用户名 绑定账号', at_sender=True)
+                for i in result:
+                    id = i[0]
+                    mode = int(msglist[-1][1])
+            elif ':' in msglist[-1]:
+                id = ' '.join(msglist[:mlen-1])
+                mode = int(msglist[-1][1])
+            else:
+                id = ' '.join(msglist[:mlen])
+                mode = 0
+    elif msg[0]['type'] == 'at':
+        uid = int(msg[0]['data']['qq'])
+        result = esql.get_id_mod(uid)
+        if not result:
+            await bot.finish(ev, '该账号尚未绑定，请输入 bind 用户名 绑定账号', at_sender=True)
+        if len(msg) == 2:
+            if msg[1]['data']['text'].isspace():
+                msg.pop(1)
+        if len(msg) == 1:
+            for i in result:
+                id = i[0]
+                mode = i[1]
+        elif msg[1]['type'] == 'text':
+            text = msg[1]['data']['text'].strip()
+            if ':' in text and text[1].isdigit():
+                for i in result:
+                    id = i[0]
+                mode = int(text[1])
+            else:
+                await bot.finish(ev, '模式错误', at_sender=True)
+        else:
+            await bot.finish(ev, '指令错误', at_sender=True)
     else:
-        if ':' in msg[-1]:
-            id = ' '.join(msg[:msg_len-1])
-            mode = int(msg[-1][1])
-        else:
-            id = ' '.join(msg[:msg_len])
-            mode = 0
-    
+        await bot.finish(ev, '指令错误', at_sender=True)
+
     info = await draw_info(id, GM[mode])
     await bot.send(ev, info, at_sender=True)
 
 @sv.on_prefix(('recent', 're', 'RECENT', 'RE', 'Recent', 'Re'))
 async def recent(bot, ev:CQEvent):
-    uid = ev.user_id
-    msg = ev.message.extract_plain_text().strip().split(' ')
-    if '' in msg:
-        msg.remove('')
-    result = esql.get_id_mod(uid)
-    msg_len = len(msg)
-    if not msg:
-        if not result:
-            await bot.finish(ev, '该账号尚未绑定，请输入 bind 用户名 绑定账号', at_sender=True)
-        for i in result:
-            id = i[0]
-            mode = i[1]
-    elif msg_len == 1:
-        if ':' in msg[0]:
+    msg = ev.message
+    if msg[0]['type'] == 'text':
+        uid = ev.user_id
+        result = esql.get_id_mod(uid)
+        text = msg[0]['data']['text']
+        if not text:
             if not result:
                 await bot.finish(ev, '该账号尚未绑定，请输入 bind 用户名 绑定账号', at_sender=True)
             for i in result:
                 id = i[0]
-            mode = int(msg[0][1])
+                mode = i[1]
         else:
-            id = msg[0]
-            mode = 0
+            msglist = text.strip().split(' ')
+            if '' in msglist:
+                msglist.remove('')
+            mlen = len(msglist)
+            if ':' in msglist[-1] and mlen == 1:
+                if not result:
+                    await bot.finish(ev, '该账号尚未绑定，请输入 bind 用户名 绑定账号', at_sender=True)
+                for i in result:
+                    id = i[0]
+                    mode = int(msglist[-1][1])
+            elif ':' in msglist[-1]:
+                id = ' '.join(msglist[:mlen-1])
+                mode = int(msglist[-1][1])
+            else:
+                id = ' '.join(msglist[:mlen])
+                mode = 0
+    elif msg[0]['type'] == 'at':
+        uid = int(msg[0]['data']['qq'])
+        result = esql.get_id_mod(uid)
+        if not result:
+            await bot.finish(ev, '该账号尚未绑定，请输入 bind 用户名 绑定账号', at_sender=True)
+        if len(msg) == 2:
+            if msg[1]['data']['text'].isspace():
+                msg.pop(1)
+        if len(msg) == 1:
+            for i in result:
+                id = i[0]
+                mode = i[1]
+        elif msg[1]['type'] == 'text':
+            text = msg[1]['data']['text'].strip()
+            if ':' in text and text[1].isdigit():
+                for i in result:
+                    id = i[0]
+                mode = int(text[1])
+            else:
+                await bot.finish(ev, '模式错误', at_sender=True)
+        else:
+            await bot.finish(ev, '指令错误', at_sender=True)
     else:
-        if ':' in msg[-1]:
-            id = ' '.join(msg[:msg_len-1])
-            mode = int(msg[-1][1])
-        else:
-            id = ' '.join(msg[:msg_len])
-            mode = 0
+        await bot.finish(ev, '指令错误', at_sender=True)
     
     info = await draw_score('recent', id, GM[mode])
     await bot.send(ev, info, at_sender=True)
 
 @sv.on_prefix(('score', 'SCORE', 'Score'))
 async def score(bot, ev:CQEvent):
-    uid = ev.user_id
-    msg = ev.message.extract_plain_text().strip().split(' ')
-    if '' in msg:
-        msg.remove('')
-    if not msg:
-        await bot.finish(ev, '请输入正确的地图id', at_sender=True)
-    result = esql.get_id_mod(uid)
-    msg_len = len(msg)
-    if msg_len == 1:
+    msg = ev.message
+    if msg[0]['type'] == 'text':
+        text = msg[0]['data']['text'].strip().split(' ')
+        if '' in text:
+            text.remove('')
+        if not text:
+            await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
+        uid = ev.user_id
+        result = esql.get_id_mod(uid)
+        if len(text) == 1:
+            if not result:
+                await bot.finish(ev, '该账号尚未绑定，请输入 bind 用户名 绑定账号', at_sender=True)
+            elif text[0].isdigit():
+                for i in result:
+                    id = i[0]
+                mode = 0
+                mapid = text[0]
+            else:
+                await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
+        elif len(text) == 2:
+            if ':' in text[-1] and text[0].isdigit():
+                if not result:
+                    await bot.finish(ev, '该账号尚未绑定，请输入 bind 用户名 绑定账号', at_sender=True)
+                for i in result:
+                    id = i[0]
+                mapid = text[0]
+                mode = int(text[-1][1])
+            elif text[-1].isdigit():
+                id = text[0]
+                mapid = text[-1]
+                mode = 0
+            else:
+                await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
+        else:
+            if ':' in text[-1] and text[-2].isdigit():
+                id = ' '.join(text[:len(text)-2])
+                mapid = text[-2]
+                mode = int(text[-1][1])
+            elif text[-1].isdigit():
+                id = ' '.join(text[:len(text)-1])
+                mapid = text[-1]
+                mode = 0
+            else:
+                await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
+    elif msg[0]['type'] == 'at':
+        if len(msg) == 1:
+            await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
+        uid = int(msg[0]['data']['qq'])
+        result = esql.get_id_mod(uid)
         if not result:
             await bot.finish(ev, '该账号尚未绑定，请输入 bind 用户名 绑定账号', at_sender=True)
-        elif msg[0].isdigit() and result:
+        if msg[1]['type'] == 'text':
+            text = msg[1]['data']['text'].strip().split(' ')
+            if '' in text:
+                text.remove('')
+            if not text:
+                await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
             for i in result:
                 id = i[0]
-            mode = 0
-            mapid = msg[0]
+            if ':' in text[-1] and text[0].isdigit():
+                mapid = text[0]
+                mode = int(text[-1][1])
+            elif text[0].isdigit():
+                mapid = text[0]
+                mode = 0
+            else:
+                await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
         else:
-            await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
-    elif msg_len == 2:
-        if not result:
-            await bot.finish(ev, '该账号尚未绑定，请输入 bind 用户名 绑定账号', at_sender=True)
-        elif ':' in msg[-1] and msg[0].isdigit() and result:
-            for i in result:
-                id = i[0]
-            mapid = msg[0]
-            mode = int(msg[-1][1])
-        elif msg[-1].isdigit():
-            id = msg[0]
-            mapid = msg[-1]
-            mode = 0
-        else:
-            await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
+            await bot.finish(ev, '指令错误', at_sender=True)
     else:
-        if ':' in msg[-1] and msg[-2].isdigit():
-            id = ' '.join(msg[:msg_len-2])
-            mapid = msg[-2]
-            mode = int(msg[-1][1])
-        elif msg[-1].isdigit():
-            id = ' '.join(msg[:msg_len-1])
-            mapid = msg[-1]
-            mode = 0
-        else:
-            await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
+        await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
     
     info = await draw_score('score', id, GM[mode], mapid=mapid)
     await bot.send(ev, info, at_sender=True)
@@ -160,7 +234,12 @@ async def bp(bot, ev:CQEvent):
     msg_len = len(msg)
     if '-' in msg[-1]:
         lr = re.match(r'(.*)-(.*)', msg[-1])
-        min, max = int(lr.group(1)), int(lr.group(2))
+        try:
+            min, max = int(lr.group(1)), int(lr.group(2))
+        except:
+            await bot.finish(ev, '请输入正确的bp范围', at_sender=True)
+        if min > 50 or max > 50:
+            await bot.finish(ev, '只允许查询bp 1-50 的成绩', at_sender=True)
         if msg_len == 1:
             if not result:
                 await bot.finish(ev, '该账号尚未绑定，请输入 bind 用户名 绑定账号', at_sender=True)
