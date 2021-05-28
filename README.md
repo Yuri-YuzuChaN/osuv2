@@ -72,7 +72,7 @@
 |        |                                                              | [mapid] [:mode]          | 查询地图其它模式成绩，`:`为触发词                            |
 |        |                                                              | [user] [mapid]           | 查询TA人地图成绩                                             |
 |        |                                                              | [user] [mapid] [:mode]   | 查询TA人地图其它模式成绩，`:`为触发词                        |
-| *bp    | 查询bp榜成绩，可附带模式，1、2、3分别为taiko、ctb、mania，例：`bp3 1` | [num]                    | 查询bp成绩                                                   |
+| *bp    | 查询bp榜成绩| [num]                    | 查询bp成绩                                                   |
 |        |                                                              | [num] [+mods]            | 查询bp附加mods成绩，`+`为mods触发词，多mods之间使用半角逗号  |
 |        |                                                              | [user] [num]             | 查询TA人bp成绩                                               |
 |        |                                                              | [user] [num] [+mods]     | 查询TA人bp附加mods成绩，`+`为mods触发词，多mods之间使用半角逗号 |
@@ -82,7 +82,7 @@
 |        |                                                              | [user] [min-max] [+mods] | 查询TA人bp，`-`为范围触发词，最多10个，`+`为mods触发词，多mods之间使用半角逗号 |
 | map    | 查询地图的信息                                               | [mapid]                  | 查询地图信息                                                 |
 | getbg  | 提取背景                                                     | [mapid]                  | 提取地图信息                                                 |
-| *smap  | 查询地图，可附带模式，1、2、3分别为taiko、ctb、mania，例：`smap3 GHOST` | [keyword]                | 查询关键词的地图，默认搜索std模式ranked状态                  |
+| *smap  | 查询地图| [keyword]                | 查询关键词的地图，默认搜索std模式ranked状态                  |
 |        |                                                              | [keyword] [rs=status]    | 查询关键词的其它状态地图，`rs=`为状态触发词，1-5分别为ranked，Qualified，Loved，Pending，Graveyard |
 | osudl  | 下载地图上传到群                                             | [bmapid]                 | 下载地图，`bmapid`为地图组id，非单图id                       |
 
