@@ -1,4 +1,4 @@
-import aiohttp, os, re, zipfile, aiohttp
+import aiohttp, os, re, zipfile, aiohttp, shutil
 
 osufile = os.path.join(os.path.dirname(__file__), 'osufile')
 mapfile = os.path.join(osufile, 'map')
@@ -23,8 +23,8 @@ async def MapDownload(mapid, DL=False):
     url = f'https://txy1.sayobot.cn/beatmaps/download/novideo/{mapid}'
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, allow_redirects=False) as re:
-                sayo = re.headers['Location']
+            async with session.get(url, allow_redirects=False) as req:
+                sayo = req.headers['Location']
     except:
         print('Request Failed or Timeout')
         return
@@ -38,14 +38,8 @@ async def MapDownload(mapid, DL=False):
     mystr = myzip.filename.split(".")
     myzip.extractall(mystr[0])
     myzip.close()
-    end = ['mp3','wav','mp4','avi','mov','ogg','osb','flv']
-    # 删除其余不需要的文件
-    for root, dirs, files in os.walk(filepath[:-4], topdown=False):
-        for name in files:
-            for i in end:
-                if name.endswith(i):
-                    os.remove(os.path.join(root, name))
-    # 删除下载osz文件
+    #删除文件
+    remove_file(filepath[:-4])
     os.remove(filepath)
     return filepath[:-4]
 
@@ -65,32 +59,54 @@ async def get_osz(sayo, mapid, DL=False):
         print('Map Download Failed')
         return
 
+def remove_file(path):
+    s = []
+    for file in os.listdir(path):
+        if '.osu' in file:
+            bg = get_pic_music('pic', os.path.join(path, file))
+            if bg not in s:
+                s.append(bg)
+            music = get_pic_music('music', os.path.join(path, file))
+            if music not in s:
+                s.append(music)
+            s.append(file)
+
+    for root, dir, files in os.walk(path, topdown=False):
+        for name in files:
+            if name not in s:
+                os.remove(os.path.join(root, name))
+        for dirname in dir:
+            shutil.rmtree(os.path.join(root, dirname))
+    
+    return True
+
 def get_file(path, mapid, version):
     for file in os.listdir(path):
         if '.osu' in file:
             with open(os.path.join(path, file), 'r', encoding='utf-8') as f:
                 text = f.read()
-            result = re.finditer(r'BeatmapID:(.+)', text)
-            try:
-                for i in result:
-                    rmapid = i.groups()[0]
+            result = re.search(r'BeatmapID:(.+)', text)
+            if result:
+                rmapid = result.group(1)
                 if str(mapid) == rmapid:
                     filepath = os.path.join(path, file)
                     return filepath
-            except:
-                continue
-    else:
-        for file in os.listdir(path):
-            if version in file:
-                filepath = os.path.join(path, file)
-                return filepath
+    for file in os.listdir(path):
+        if version in file:
+            filepath = os.path.join(path, file)
+            return filepath
 
-def get_picture(path):
+def get_pic_music(project, path):
+    if project == 'pic':
+        sre = r'\d,\d,\"(.+)\"'
+    elif project == 'music':
+        sre = r'AudioFilename:(.+)'
+    else:
+        raise 'project error'
     with open(path, 'r', encoding='utf-8') as f:
         text = f.read()
-    result = re.finditer(r'\d,\d,\"(.+?)\"', text)
-    for i in result:
-        return i.groups()[0]
+    result = re.search(sre, text)
+    return result.group(1).strip()
 
 async def get_project_img(project, url, uid=0, update=False):
     uid = str(uid)
@@ -103,6 +119,8 @@ async def get_project_img(project, url, uid=0, update=False):
     elif project == 'badges':
         result = re.match(r'https://assets.ppy.sh/profile-badges/(.+)', url)
         name = result.group(1)
+    else:
+        raise 'project error'
     if project == 'badges':
         path = os.path.join(badges, name)
     elif project == 'cover':
