@@ -1,7 +1,10 @@
 import aiohttp, json, os, traceback
 
+from aiohttp.client import ClientSession
+
 api = 'https://osu.ppy.sh/api/v2'
 sayoapi = 'https://api.sayobot.cn'
+chimuapi = 'https://api.chimu.moe/cheesegull/search'
 token_json = os.path.join(os.path.dirname(__file__), 'token.json')
 
 def get_token_json():
@@ -22,10 +25,7 @@ async def get_api_info(project, id=0, mode='osu', mapid=0):
         if project == 'info' or project == 'bind' or project == 'update':
             url = f'{api}/users/{id}/{mode}'
         elif project == 'recent':
-            if mode != 'osu':
-                url = f'{api}/users/{id}/scores/{project}?mode={mode}&include_fails=1'
-            else:
-                url = f'{api}/users/{id}/scores/{project}?include_fails=1'
+            url = f'{api}/users/{id}/scores/{project}?mode={mode}&include_fails=1'
         elif project == 'score':
             if mode != 'osu':
                 url = f'{api}/beatmaps/{mapid}/scores/users/{id}?mode={mode}'
@@ -66,6 +66,17 @@ async def get_sayoapi_info(project, mode=1, status=1, keyword=None, bmapid=0):
     except:
         return False
 
+async def get_chimuapi_info(mode, status, keyword):
+    try:
+        url = f'{chimuapi}?query={keyword}&amount=10&status={status}&mode={mode}'
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as req:
+                if req.status != 200:
+                    return 'API请求失败，请联系管理员或稍后再尝试'
+                return await req.json()
+    except:
+        return False
+
 async def return_info(project, url, data=None):
     try:
         if not data:
@@ -76,7 +87,18 @@ async def return_info(project, url, data=None):
             async with aiohttp.ClientSession() as session:
                 async with session.get(url, headers=headers) as req:
                     if req.status != 200:
-                        return 'API请求失败，请联系管理员或稍后再尝试'
+                        if project == 'info' or project == 'bind':
+                            return '未找到该玩家，请确认玩家ID'
+                        elif project == 'recent':
+                            return '未找到该玩家，请确认玩家ID'
+                        elif project == 'score':
+                            return '未找到该地图成绩，请确认地图ID或模式'
+                        elif project == 'bp':
+                            return '未找到该玩家BP'
+                        elif project == 'map':
+                            return '未找到该地图，请确认地图ID'
+                        else:
+                            return 'API请求失败，请联系管理员或稍后再尝试'
                     if project != 'mapinfo':
                         return await req.json()
                     return await req.json(content_type='text/html', encoding='utf-8')
