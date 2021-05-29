@@ -15,7 +15,6 @@ helpimg = os.path.join(os.path.dirname(__file__), 'osufile', 'help.png')
 
 GM = {0 : 'osu', 1 : 'taiko', 2 : 'fruits', 3 : 'mania'}
 GMN = {0 : 'Std', 1 : 'Taiko', 2 : 'Ctb', 3 : 'Mania'}
-sayo = [1, 2, 4, 8, 16]
 esql = osusql()
 
 @sv.on_prefix(('info', 'INFO', 'Info'))
@@ -33,7 +32,7 @@ async def info(bot, ev:CQEvent):
                 mode = i[1]
         else:
             msglist = text.strip().split(' ')
-            if '' in msglist:
+            while '' in msglist:
                 msglist.remove('')
             mlen = len(msglist)
             if ':' in msglist[-1] and mlen == 1:
@@ -91,7 +90,7 @@ async def recent(bot, ev:CQEvent):
                 mode = i[1]
         else:
             msglist = text.strip().split(' ')
-            if '' in msglist:
+            while '' in msglist:
                 msglist.remove('')
             mlen = len(msglist)
             if ':' in msglist[-1] and mlen == 1:
@@ -139,7 +138,7 @@ async def score(bot, ev:CQEvent):
     msg = ev.message
     if msg[0]['type'] == 'text':
         text = msg[0]['data']['text'].strip().split(' ')
-        if '' in text:
+        while '' in text:
             text.remove('')
         if not text:
             await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
@@ -189,7 +188,7 @@ async def score(bot, ev:CQEvent):
             await bot.finish(ev, '该账号尚未绑定，请输入 bind 用户名 绑定账号', at_sender=True)
         if msg[1]['type'] == 'text':
             text = msg[1]['data']['text'].strip().split(' ')
-            if '' in text:
+            while '' in text:
                 text.remove('')
             if not text:
                 await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
@@ -218,10 +217,14 @@ async def bp(bot, ev:CQEvent):
     mode = 0
     mods = 0
     bp = ''
-    if '' in msg:
+    while '' in msg:
         msg.remove('')
     if not msg:
         await bot.finish(ev, '请输入正确的参数', at_sender=True)
+    elif 'CQ:at' in str(ev.message):
+        result = re.finditer(r'\[CQ:at,qq=(.*)\]', str(ev.message))
+        for i in result:
+            uid = int(i.groups()[0])
     if '+' in msg[-1]:
         msg[-1] = msg[-1].upper()
         mods = msg[-1][1:].split(',')
@@ -290,20 +293,18 @@ async def bp(bot, ev:CQEvent):
     await bot.send(ev, info, at_sender=True)
     
 @sv.on_prefix(('map', 'MAP', 'Map'))
-async def recent(bot, ev:CQEvent):
+async def map(bot, ev:CQEvent):
     mapid = ev.message.extract_plain_text().strip().split(' ')
     mods = 0
-    if '' in mapid:
+    while '' in mapid:
         mapid.remove('')
-    if not mapid:
-        await bot.finish(ev, '请输入查询地图id', at_sender=True)
-    if '+' in mapid[-1]:
-        mods = get_mods_num(mapid[-1][1:].split(','))
-        del mapid[-1]
     if not mapid:
         await bot.finish(ev, '请输入地图ID', at_sender=True)
     elif not mapid[0].isdigit():
         await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
+    if '+' in mapid[-1]:
+        mods = get_mods_num(mapid[-1][1:].split(','))
+        del mapid[-1]
     info = await map_info(mapid[0], mods)
     if isinstance(info, tuple): 
         for msg in info:
@@ -314,28 +315,56 @@ async def recent(bot, ev:CQEvent):
 @sv.on_prefix(('smap', 'SMAP', 'Smap'))
 async def search(bot, ev:CQEvent):
     word = ev.message.extract_plain_text().strip().split(' ')
-    mode = 1
-    status = 1
-    if '' in word:
+    mode = 0
+    status = 0
+    op = 's'
+    while '' in word:
         word.remove('')
     if not word:
         await bot.finish(ev, '请输入查询地图的关键词', at_sender=True)
-    if len(word) != 1:
-        if word[0] == '1' or word[0] == '2' or word[0] == '3':
-            mode = sayo[int(word[0])]
-            del word[0]
+    elif word[0] == '1' or word[0] == '2' or word[0] == '3':
+        if word[1].lower() == '-s' or word[1].lower() == '-c':
+            op = word[1][1:]
+            del word[1]
+        mode = int(word[0])
+        del word[0]
+    elif word[0].lower() == '-s' or word[0].lower() == '-c':
+        op = word[0][1:]
+        del word[0]
+
     if 'rs=' in word[-1]:
         try:
-            us = int(word[-1][3:])
-            status = sayo[us-1]
-            if us > 0 and us < 6:
+            status = int(word[-1][3:])
+            if status > 0 and status < 6:
                 del word[-1]
             else:
                 await bot.finish(ev, '请输入正确的rank状态', at_sender=True)
         except:
             await bot.finish(ev, '请输入正确的rank状态', at_sender=True)
     keyword = " ".join(word)
-    info = await search_map('search', mode, status, keyword)
+    info = await search_map('search', mode, status, keyword, op)
+    await bot.send(ev, info)
+
+@sv.on_prefix(('bmap', 'BMAP', 'Bmap'))
+async def bmap(bot, ev:CQEvent):
+    msg = ev.message.extract_plain_text().strip().split(' ')
+    while '' in msg:
+        msg.remove('')
+    if not msg:
+        await bot.finish(ev, '请输入地图ID', at_sender=True)
+    op = False
+    if len(msg) == 1:
+        if not msg[0].isdigit():
+            await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
+        bmapid = msg[0]
+    elif msg[0] == '-b':
+        if not msg[1].isdigit():
+            await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
+        op = True
+        bmapid = msg[1]
+    else:
+        await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
+    info = await bmap_info(bmapid, op)
     await bot.send(ev, info)
 
 @sv.on_prefix(('osudl', 'Osudl', 'OSUDL'))
@@ -380,7 +409,7 @@ async def unbind(bot, ev:CQEvent):
 async def recent(bot, ev:CQEvent):
     uid = ev.user_id
     msg = ev.message.extract_plain_text().strip().split(' ')
-    if '' in msg:
+    while '' in msg:
         msg.remove('')
     result = esql.get_id_mod(uid)
     if not result:
@@ -392,7 +421,7 @@ async def recent(bot, ev:CQEvent):
             mode = int(msg[1])
         except:
             await bot.finish(ev, '请输入更改的模式！', at_sender=True)
-        if mode == 0 or mode == 1 or mode == 2 or mode == 3:
+        if mode >= 0 or mode < 4:
             result = esql.update_mode(uid, mode)
             if result:
                 botmsg = f'已将默认模式更改为 {GMN[mode]}'
