@@ -10,7 +10,7 @@ from .pp import *
 from .mods import *
 from .sql import osusql
 
-FILEHTTP = f'http://yuzuai.cn:{PORT}/map'
+FILEHTTP = f'http://xxxxx.com:{PORT}/map'
 
 osufile = os.path.join(os.path.dirname(__file__), 'osufile')
 mapfile = os.path.join(osufile, 'map')
