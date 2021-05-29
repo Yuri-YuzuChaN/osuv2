@@ -8,9 +8,10 @@
 
 1. 将该项目放在HoshinoBot插件目录 `modules` 下，或者clone本项目 `git clone https://github.com/Yuri-YuzuChaN/osuv2`
 2. 在`token.json`填入申请的`client_id`，`client_secret`，`access_token`，`refresh_token`，[如何申请token](#如何申请token)
-3. pip以下依赖：`pillow`，`pyttanko`，`matplotlib`，`traceback`, `Maniera`，`filetype`
-4. 在`config/__bot__.py`模块列表中添加`osuv2`
-5. 重启HoshinoBot
+3. 修改`draw.py`文件中的`FILEHTTP`字符串，将地址改为自己的服务器IP或域名，`:{PORT}/map`请勿删除
+4. pip以下依赖：`pillow`，`pyttanko`，`matplotlib`，`traceback`, `Maniera`，`filetype`
+5. 在`config/__bot__.py`模块列表中添加`osuv2`
+6. 重启HoshinoBot
 
 **注：`pillow`需要高于等于8.0.0版本**
 
@@ -110,7 +111,7 @@
 **2021-05-29**
 
 1. 新增查询图组功能，指令：`bmap [bmapid]`，`bmapid`为图组id，或者使用地图id`mapid`查询图组，在指令加`-b`，例：`bmap -b [mapid]`
-2. 修改`map`指令，并增加音乐分享，音乐分享需使用`http`服务，请自行修改`draw.py`文件中的`FILEHTTP`字符串，将地址改为自己的服务器IP或域名
+2. 修改`map`指令，并增加音乐分享，音乐分享需使用`http`服务，请自行修改`draw.py`文件中的`FILEHTTP`字符串，将地址改为自己的服务器IP或域名，`:{PORT}/map`请勿删除
 3. 完善api请求，准确返回无法查询的错误
 4. 修复所有指令无法查询TA人的问题
 5. 修复指令@人无法查询的问题
