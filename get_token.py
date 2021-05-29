@@ -1,4 +1,4 @@
-import requests, os
+import requests, json
 
 code = ''
 client_id = 0
@@ -15,10 +15,23 @@ def get_access_token():
         'code' : code
     }
     res = requests.post(api, data=data)
-    if res.status_code != 200:
-        return
-    return res.text
+    if res.status_code == 200:
+        OAuth = res.json()
+        token = {
+            'client_id' : client_id,
+            'client_secret' : client_secret,
+            'access_token' : OAuth['access_token'],
+            'refresh_token' : OAuth['refresh_token']
+        }
+        return token
+    else:
+        return False
 
-token = open('cache.json', 'w', encoding='utf-8')
-print(get_access_token(), file=token)
-token.close()
+if __name__ == '__main__' :
+    token = get_access_token()
+    if isinstance(token, dict):
+        name = 'token.json'
+    else:
+        name = '请重新进行第三步.json'
+    with open(name, 'w', encoding='utf-8') as f:
+        json.dump(get_access_token(), f, ensure_ascii=False, indent=2)
