@@ -99,8 +99,8 @@
 |        |                  | -b [mapid]                      | 使用地图id查询图组信息                                       |
 | osudl  | 下载地图上传到群 | [bmapid]                        | 下载地图，`bmapid`为图组id，非单图id                         |
 
-`status`：0-5分别为Ranked，Qualified，Loved，Pending，WIP，Graveyard
-`mode`：0-3分别为std，taiko，ctb，mania
+**`status`：0-5分别为Ranked，Qualified，Loved，Pending，WIP，Graveyard**
+**`mode`：0-3分别为std，taiko，ctb，mania**
 
 ## 即将实现
 
