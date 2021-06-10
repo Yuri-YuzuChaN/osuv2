@@ -1,4 +1,4 @@
-import aiohttp, os, re, zipfile, aiohttp, shutil
+import aiohttp, os, re, zipfile, aiohttp, shutil, hoshino
 
 osufile = os.path.join(os.path.dirname(__file__), 'osufile')
 mapfile = os.path.join(osufile, 'map')
@@ -12,26 +12,26 @@ for item in ['badges', 'cover', 'icon', 'map', 'output']:
         os.makedirs(RES)
         print(f'{item.capitalize()} Floder Created Successfully')
 
-async def MapDownload(mapid, DL=False):
+async def MapDownload(setid, DL=False):
     # 判断是否存在该文件
-    mapid = str(mapid)
+    setid = str(setid)
     if not DL:
         for file in os.listdir(mapfile):
-            if mapid in file:
+            if setid in file:
                 if os.path.exists(os.path.join(mapfile, file)):
                     return os.path.join(mapfile, file)
-    url = f'https://txy1.sayobot.cn/beatmaps/download/novideo/{mapid}'
+    url = f'https://txy1.sayobot.cn/beatmaps/download/novideo/{setid}'
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(url, allow_redirects=False) as req:
                 sayo = req.headers['Location']
     except:
-        print('Request Failed or Timeout')
+        hoshino.logger.error('Request Failed or Timeout')
         return
     if DL:
-        filename = await get_osz(sayo, mapid, True)
+        filename = await get_osz(sayo, setid, True)
         return os.path.join(mapfile, filename), filename
-    filename = await get_osz(sayo, mapid)
+    filename = await get_osz(sayo, setid)
     filepath = os.path.join(mapfile, filename)
     # 解压下载的osz文件
     myzip = zipfile.ZipFile(filepath)
@@ -43,20 +43,19 @@ async def MapDownload(mapid, DL=False):
     os.remove(filepath)
     return filepath[:-4]
 
-async def get_osz(sayo, mapid, DL=False):
+async def get_osz(sayo, setid, DL=False):
     try:
-        print('Start Downloading Map')
         async with aiohttp.ClientSession() as session:
             async with session.get(sayo) as req:
-                filename = f'{mapid}.osz'
-                if DL:
-                    filename = req.content_disposition.filename
+                osufilename = req.content_disposition.filename
+                hoshino.logger.info(f'Start Downloading Map: {osufilename}')
+                filename = f'{setid}.osz' if not DL else osufilename
                 chunk = await req.read()
                 open(os.path.join(mapfile, filename), 'wb').write(chunk)
-        print('Map Download Complete')
+        hoshino.logger.info(f'Map: <{osufilename}> Download Complete')
         return filename
     except:
-        print('Map Download Failed')
+        hoshino.logger.error(f'Map: <{setid}> Download Failed')
         return
 
 def remove_file(path):
@@ -140,14 +139,15 @@ async def get_project_img(project, url, uid=0, update=False):
             url = 'https://osu.ppy.sh/images/layout/avatar-guest.png'
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as req:
+                if req.status == 403:
+                    return os.path.join(osufile, 'work', 'mapbg.png')
                 chunk = await req.read()
                 open(path, 'wb').write(chunk)
         if update:
             return True
         return path
     except Exception as e:
-        if project == 'cover':
-            return os.path.join(osufile, 'work', 'mapbg.png')
+        hoshino.logger.error(f'Image Failed: {e}')
         return e
 
 def get_mode_img(mode, diff=None):
