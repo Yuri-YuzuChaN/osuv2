@@ -1,16 +1,14 @@
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 from datetime import datetime, timedelta
-from hoshino.config import PORT
+import hoshino, os
 import matplotlib.pyplot as plt
-import os
 
 from .api import get_api_info, get_chimuapi_info, get_sayoapi_info
 from .file import *
 from .pp import *
 from .mods import *
 from .sql import osusql
-
-FILEHTTP = f'http://xxxxx.com:{PORT}/map'
+from .http import FILEHTTP
 
 osufile = os.path.join(os.path.dirname(__file__), 'osufile')
 mapfile = os.path.join(osufile, 'map')
@@ -156,7 +154,7 @@ def crop_bg(path, size):
         crop_img = sf.crop((x1, y1, x2, y2))
         return crop_img
     else:
-        return path
+        return bg
 
 def stars_diff(stars):
     diff = ''
@@ -359,7 +357,8 @@ async def draw_info(id, mode):
         im.save(outputimage_path)
         msg = f'[CQ:image,file=file:///{outputimage_path}]'
     except Exception as e:
-        return f'Error: {e}'
+        hoshino.logger.error(f'制图错误：{e}')
+        return f'Error: {type(e)}'
     return msg
 
 async def draw_score(project, id, mode, **kwargs):
@@ -399,7 +398,8 @@ async def draw_score(project, id, mode, **kwargs):
         else:
             return False
     except Exception as e:
-        return f'Error: {e}'
+        hoshino.logger.error(f'查询错误：{e}')
+        return f'Error: {type(e)}'
     try:
         #score
         uid = userscore['user_id']
@@ -549,7 +549,7 @@ async def draw_score(project, id, mode, **kwargs):
             supporter_bg = Image.open(user_supporter).convert('RGBA').resize((40, 40))
             im.alpha_composite(supporter_bg, (267, 606))
         #mapid
-        w_mapid = datatext(1425, 40, 27, f'Bmapid: {mapsetid}  |  Mapid: {mapid}', Torus_SemiBold, anchor='rm')
+        w_mapid = datatext(1425, 40, 27, f'Setid: {mapsetid}  |  Mapid: {mapid}', Torus_SemiBold, anchor='rm')
         im = draw_text(im, w_mapid)
         #曲名
         w_title = datatext(75, 118, 30, f'{title} | by {artist}', Meiryo_SemiBold, anchor='lm')
@@ -642,7 +642,8 @@ async def draw_score(project, id, mode, **kwargs):
         im.save(outputimage_path)
         msg = f'[CQ:image,file=file:///{outputimage_path}]'
     except Exception as e:
-        return f'Error: {e}'
+        hoshino.logger.error(f'制图错误：{e}')
+        return f'Error: {type(e)}'
     return msg
 
 async def best_pfm(id, mode, min, max, mods=None):
@@ -659,68 +660,72 @@ async def best_pfm(id, mode, min, max, mods=None):
         bplist = setmodslist[min-1:max]
     else:
         bplist = range(min-1, max)
-    bplist_len = len(bplist)
-    im = Image.new('RGBA', (1500, 180 + 82 * (bplist_len - 1)), (31, 41, 46, 255))
-    BG = os.path.join(osufile, 'Best Performance.png')
-    BG_img = Image.open(BG).convert('RGBA')
-    im.alpha_composite(BG_img)
-    f_div = Image.new('RGBA', (1500, 2), (255, 255, 255, 255)).convert('RGBA')
-    im.alpha_composite(f_div, (0, 100))
-    user = info[0]['user']['username']
-    uid = info[0]['user_id']
-    w_user = datatext(1450, 50, 25, f"{user}'s | {mode.capitalize()} | BP {min} - {max}", Torus_SemiBold, anchor='rm')
-    im = draw_text(im, w_user)
-    for num, bp in enumerate(bplist):
-        h_num = 82 * num
-        s = info[bp]
-        acc = s['accuracy']
-        mods = s['mods']
-        time = s['created_at']
-        rank = s['rank']
-        pp = s['pp']
-        mapid = s['beatmap']['id']
-        version = s['beatmap']['version']
-        bmap = s['beatmapset']
-        artist = bmap['artist_unicode'] if bmap['artist_unicode'] else bmap['artist']
-        title = bmap['title_unicode'] if bmap['title_unicode'] else bmap['title']
-        #mods
-        if mods:
-            for mods_num, s_mods in enumerate(mods):
-                mods_bg = os.path.join(osufile, 'mods', f'{s_mods}.png')
-                mods_img = Image.open(mods_bg).convert('RGBA')
-                im.alpha_composite(mods_img, (1000 + 50 * mods_num, 126 + h_num))
-            if rank == 'X' or rank == 'S':
-                rank += 'H'
-        #rank
-        rank_img = os.path.join(osufile, 'ranking', f'ranking-{rank}.png')
-        rank_bg = Image.open(rank_img).convert('RGBA').resize((64, 32))
-        im.alpha_composite(rank_bg, (30, 128 + h_num))
-        #曲名&作曲
-        w_title_artist = datatext(100, 130 + h_num, 20, f'{title} | by {artist}', Meiryo_Regular, anchor='lm')
-        im = draw_text(im, w_title_artist)
-        #地图版本&时间
-        old_time = datetime.strptime(time.replace('+00:00', ''), '%Y-%m-%dT%H:%M:%S')
-        new_time = (old_time + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
-        w_version_time = datatext(100, 158 + h_num, 18, f'{version} | {new_time}', Torus_Regular, anchor='lm')
-        im = draw_text(im, w_version_time, color=(238, 171, 0, 255))
-        #acc
-        w_acc = datatext(1250, 130 + h_num, 22, f'{acc * 100:.2f}%', Torus_SemiBold, anchor='lm')
-        im = draw_text(im, w_acc, color=(238, 171, 0, 255))
-        #mapid
-        w_mapid = datatext(1250, 158 + h_num, 18, f'ID: {mapid}', Torus_Regular, anchor='lm')
-        im = draw_text(im, w_mapid)
-        #pp
-        w_pp = datatext(1420, 140 + h_num, 25, int(pp), Torus_SemiBold, anchor='rm')
-        im = draw_text(im, w_pp, (255, 102, 171, 255))
-        w_n_pp = datatext(1450, 140 + h_num, 25, 'pp', Torus_SemiBold, anchor='rm')
-        im = draw_text(im, w_n_pp, (209, 148, 176, 255))
-        #分割线
-        div = Image.new('RGBA', (1450, 2), (46, 53, 56, 255)).convert('RGBA')
-        im.alpha_composite(div, (25, 180 + h_num))
+    try:
+        bplist_len = len(bplist)
+        im = Image.new('RGBA', (1500, 180 + 82 * (bplist_len - 1)), (31, 41, 46, 255))
+        BG = os.path.join(osufile, 'Best Performance.png')
+        BG_img = Image.open(BG).convert('RGBA')
+        im.alpha_composite(BG_img)
+        f_div = Image.new('RGBA', (1500, 2), (255, 255, 255, 255)).convert('RGBA')
+        im.alpha_composite(f_div, (0, 100))
+        user = info[0]['user']['username']
+        uid = info[0]['user_id']
+        w_user = datatext(1450, 50, 25, f"{user}'s | {mode.capitalize()} | BP {min} - {max}", Torus_SemiBold, anchor='rm')
+        im = draw_text(im, w_user)
+        for num, bp in enumerate(bplist):
+            h_num = 82 * num
+            s = info[bp]
+            acc = s['accuracy']
+            mods = s['mods']
+            time = s['created_at']
+            rank = s['rank']
+            pp = s['pp']
+            mapid = s['beatmap']['id']
+            version = s['beatmap']['version']
+            bmap = s['beatmapset']
+            artist = bmap['artist_unicode'] if bmap['artist_unicode'] else bmap['artist']
+            title = bmap['title_unicode'] if bmap['title_unicode'] else bmap['title']
+            #mods
+            if mods:
+                for mods_num, s_mods in enumerate(mods):
+                    mods_bg = os.path.join(osufile, 'mods', f'{s_mods}.png')
+                    mods_img = Image.open(mods_bg).convert('RGBA')
+                    im.alpha_composite(mods_img, (1000 + 50 * mods_num, 126 + h_num))
+                if rank == 'X' or rank == 'S':
+                    rank += 'H'
+            #rank
+            rank_img = os.path.join(osufile, 'ranking', f'ranking-{rank}.png')
+            rank_bg = Image.open(rank_img).convert('RGBA').resize((64, 32))
+            im.alpha_composite(rank_bg, (30, 128 + h_num))
+            #曲名&作曲
+            w_title_artist = datatext(100, 130 + h_num, 20, f'{title} | by {artist}', Meiryo_Regular, anchor='lm')
+            im = draw_text(im, w_title_artist)
+            #地图版本&时间
+            old_time = datetime.strptime(time.replace('+00:00', ''), '%Y-%m-%dT%H:%M:%S')
+            new_time = (old_time + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
+            w_version_time = datatext(100, 158 + h_num, 18, f'{version} | {new_time}', Torus_Regular, anchor='lm')
+            im = draw_text(im, w_version_time, color=(238, 171, 0, 255))
+            #acc
+            w_acc = datatext(1250, 130 + h_num, 22, f'{acc * 100:.2f}%', Torus_SemiBold, anchor='lm')
+            im = draw_text(im, w_acc, color=(238, 171, 0, 255))
+            #mapid
+            w_mapid = datatext(1250, 158 + h_num, 18, f'ID: {mapid}', Torus_Regular, anchor='lm')
+            im = draw_text(im, w_mapid)
+            #pp
+            w_pp = datatext(1420, 140 + h_num, 25, int(pp), Torus_SemiBold, anchor='rm')
+            im = draw_text(im, w_pp, (255, 102, 171, 255))
+            w_n_pp = datatext(1450, 140 + h_num, 25, 'pp', Torus_SemiBold, anchor='rm')
+            im = draw_text(im, w_n_pp, (209, 148, 176, 255))
+            #分割线
+            div = Image.new('RGBA', (1450, 2), (46, 53, 56, 255)).convert('RGBA')
+            im.alpha_composite(div, (25, 180 + h_num))
 
-    outputimage_path = os.path.join(osufile, 'output', f'pfm_{uid}.png')
-    im.save(outputimage_path)
-    msg = f'[CQ:image,file=file:///{outputimage_path}]'
+        outputimage_path = os.path.join(osufile, 'output', f'pfm_{uid}.png')
+        im.save(outputimage_path)
+        msg = f'[CQ:image,file=file:///{outputimage_path}]'
+    except Exception as e:
+        hoshino.logger.error(f'制图错误：{e}')
+        return f'Error: {type(e)}'
     return msg
 
 async def map_info(mapid, mods):
@@ -736,7 +741,7 @@ async def map_info(mapid, mods):
         music_len = calc_song_len(total_len)
         mapinfo = music_len, info['bpm'], info['count_circles'], info['count_sliders']
         version = info['version']
-        bmapid = info['beatmapset_id']
+        setid = info['beatmapset_id']
         mapdiff = info['cs'], info['drain'], info['accuracy'], info['ar'], info['difficulty_rating']
         bmap = info['beatmapset']
         artist = bmap['artist_unicode'] if bmap['artist_unicode'] else bmap['artist']
@@ -749,15 +754,15 @@ async def map_info(mapid, mods):
         ranked_date = bmap['ranked_date']
         mapcb = info['max_combo'] if mode != 3 else 'No MaxCombo'
         #获取地图
-        dirpath = await MapDownload(bmapid)
+        dirpath = await MapDownload(setid)
         version_osu = get_file(dirpath, mapid, version)
         #获取音乐
         music = get_pic_music('music', version_osu)
         music_file = os.path.join(dirpath, music)
         if not os.path.isfile(music_file):
             shutil.rmtree(dirpath)
-            await MapDownload(bmapid)
-        music_url = f'{FILEHTTP}/{bmapid}/{music}'
+            await MapDownload(setid)
+        music_url = f'{FILEHTTP}/{setid}/{music}'
         #pp
         if mode == 0:
             pp = calc_acc_pp(version_osu, mods)[5]
@@ -774,7 +779,7 @@ async def map_info(mapid, mods):
         #BG做地图
         im = Image.new('RGBA', (1200, 600))
         cover = get_pic_music('pic', version_osu)
-        cover_url = f'{FILEHTTP}/{bmapid}/{cover}'
+        cover_url = f'{FILEHTTP}/{setid}/{cover}'
         cover_path = os.path.join(dirpath, cover)
         cover_crop = crop_bg(cover_path, 'MB')
         cover_img = ImageEnhance.Brightness(cover_crop).enhance(2 / 4.0)
@@ -805,7 +810,7 @@ async def map_info(mapid, mods):
         icon_img = draw_fillet(icon, 10)
         im.alpha_composite(icon_img, (50, 400))
         #mapid
-        w_mapid = datatext(800, 40, 22, f'Bmapid: {bmapid}  |  Mapid: {mapid}', Torus_Regular, anchor='lm')
+        w_mapid = datatext(800, 40, 22, f'Setid: {setid}  |  Mapid: {mapid}', Torus_Regular, anchor='lm')
         im = draw_text(im, w_mapid)
         #版本
         w_version = datatext(120, 125, 25, version, Torus_SemiBold, anchor='lm')
@@ -850,24 +855,29 @@ async def map_info(mapid, mods):
         msg = f'[CQ:image,file=file:///{outputimage_path}]'
         return musicinfo, msg
     except Exception as e:
-        return f'Error:{e}'
+        hoshino.logger.error(f'制图错误：{e}')
+        return f'Error:{type(e)}'
 
-async def search_map(project, mode, status, keyword, op='s'):
-    if op == 's':
-        mode, status = sayo[mode], sayo[status]
-        info = await get_sayoapi_info(project, mode, status, keyword)
-        if info['status'] == -1:
-            return '未查询到地图'
-        elif isinstance(info, str):
-            return info
-        data = info['data']
-    elif op == 'c':
-        info = await get_chimuapi_info(mode, chimu[status], keyword)
-        if not info:
-            return '未查询到地图'
-        elif isinstance(info, str):
-            return info
-        data = info
+async def search_map(project, mode, status, keyword, op=False):
+    try:
+        if not op:
+            mode, status = sayo[mode], sayo[status]
+            info = await get_sayoapi_info(project, mode, status, keyword)
+            if info['status'] == -1:
+                return '未查询到地图'
+            elif isinstance(info, str):
+                return info
+            data = info['data']
+        else:
+            info = await get_chimuapi_info(mode, chimu[status], keyword)
+            if not info:
+                return '未查询到地图'
+            elif isinstance(info, str):
+                return info
+            data = info
+    except Exception as e:
+        hoshino.logger.error(f'查询错误：{e}')
+        return f'Error: {type(e)}'
     try:
         num = len(data)
         #根据结果定高度
@@ -876,18 +886,18 @@ async def search_map(project, mode, status, keyword, op='s'):
         for infonum, map in enumerate(data):
             #每个结果增加高度
             pnum = 303 * infonum
-            if op == 's':
-                sid = map['sid']
+            if not op:
+                setid = map['sid']
                 title = map['titleU'] if map['titleU'] else map['title']
                 artist = map['artistU'] if map['artistU'] else map['artist']
                 mapper = map['creator']
-            elif op == 'c':
-                sid = map['SetID']
+            else:
+                setid = map['SetID']
                 title = map['Title']
                 artist = map['Artist']
                 mapper = map['Creator']
             #查图
-            bmapinfo = await get_sayoapi_info('mapinfo', bmapid=sid)
+            bmapinfo = await get_sayoapi_info('mapinfo', setid=setid)
             mapinfo = bmapinfo['data']
             apptime = mapinfo['approved_date']
             source = mapinfo['source'] if mapinfo['source'] else 'Nothing'
@@ -896,7 +906,7 @@ async def search_map(project, mode, status, keyword, op='s'):
             mapid = gmap[0]['bid']
             songlen = gmap[0]['length']
             #获取背景
-            coverurl = f'https://assets.ppy.sh/beatmaps/{sid}/covers/cover@2x.jpg'
+            coverurl = f'https://assets.ppy.sh/beatmaps/{setid}/covers/cover@2x.jpg'
             cover = await get_project_img('cover', coverurl, mapid)
             #裁切
             cover_crop = crop_bg(cover, 'MP')
@@ -947,9 +957,9 @@ async def search_map(project, mode, status, keyword, op='s'):
             music_len = calc_song_len(songlen)
             w_music_len = datatext(1150, 145 + pnum, 20, f'lenght: {music_len}', Torus_SemiBold, anchor='rt')
             im = draw_text(im, w_music_len)
-            #bmapid
-            w_bmapid = datatext(1150, 20 + pnum, 20, f'Bmapid: {sid}', Torus_SemiBold, anchor='rt')
-            im = draw_text(im, w_bmapid)
+            #setid
+            w_setid = datatext(1150, 20 + pnum, 20, f'Setid: {setid}', Torus_SemiBold, anchor='rt')
+            im = draw_text(im, w_setid)
             ims = Image.new('RGBA', (1200, 3), (255, 255, 255, 255))
             im.alpha_composite(ims, (0, 303 * (infonum + 1) - 3))
 
@@ -957,7 +967,8 @@ async def search_map(project, mode, status, keyword, op='s'):
         im.save(outputimage_path)
         msg = f'[CQ:image,file=file:///{outputimage_path}]' 
     except Exception as e:
-        return f'Error: {e}'
+        hoshino.logger.error(f'制图错误：{e}')
+        return f'Error: {type(e)}'
     return msg
 
 async def bmap_info(mapid, op=False):
@@ -968,7 +979,7 @@ async def bmap_info(mapid, op=False):
         elif isinstance(info, str):
             return info
         mapid = info['beatmapset_id']
-    info = await get_sayoapi_info('mapinfo', bmapid=mapid)
+    info = await get_sayoapi_info('mapinfo', setid=mapid)
     if info['status'] == -1:
         return '未查询到地图'
     elif isinstance(info, str):
@@ -1024,9 +1035,9 @@ async def bmap_info(mapid, op=False):
         music_len = calc_song_len(songlen)
         w_music_len = datatext(1150, 145, 20, f'lenght: {music_len}', Torus_SemiBold, anchor='rt')
         im = draw_text(im, w_music_len)
-        #bmapid
-        w_bmapid = datatext(1150, 20, 20, f'Bmapid: {mapid}', Torus_SemiBold, anchor='rt')
-        im = draw_text(im, w_bmapid)
+        #Setid
+        w_setid = datatext(1150, 20, 20, f'Setid: {mapid}', Torus_SemiBold, anchor='rt')
+        im = draw_text(im, w_setid)
         gmap = sorted(gmap, key=lambda k: k['star'], reverse=False)
         for num, cmap in enumerate(gmap):
             if num < 20:
@@ -1086,7 +1097,8 @@ async def bmap_info(mapid, op=False):
         im.save(outputimage_path)
         msg = f'[CQ:image,file=file:///{outputimage_path}]'
     except Exception as e:
-        return f'Error: {e}'
+        hoshino.logger.error(f'制图错误：{e}')
+        return f'Error: {type(e)}'
     return msg
 
 async def bindinfo(project, id, qid):
@@ -1125,11 +1137,11 @@ async def get_map_bg(mapid):
     elif isinstance(info, str):
         return info
     version = info['version']
-    bmapid = info['beatmapset_id']
-    dirpath = await MapDownload(bmapid)
+    setid = info['beatmapset_id']
+    dirpath = await MapDownload(setid)
     version_osu = get_file(dirpath, mapid, version)
     path = get_pic_music('pic', version_osu)
-    msg = f'[CQ:image,file=file:///{dirpath}/{path}]'
+    msg = f'[CQ:image,file=file:///{os.path.join(dirpath, path)}]'
     return msg
 
 async def user(id, update=False):
@@ -1159,4 +1171,4 @@ async def user(id, update=False):
                 esql.update_all_info(id, 0, 0, 0, 0, 0, 0, mode)
             else:
                 esql.insert_all_info(id, 0, 0, 0, 0, 0, 0, mode)
-        print(f'玩家:[{username}] {GM[mode]}模式 个人信息更新完毕')
+        hoshino.logger.info(f'玩家:[{username}] {GM[mode]}模式 个人信息更新完毕')
