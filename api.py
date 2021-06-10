@@ -1,6 +1,4 @@
-import aiohttp, json, os, traceback
-
-from aiohttp.client import ClientSession
+import aiohttp, json, os, traceback, hoshino
 
 api = 'https://osu.ppy.sh/api/v2'
 sayoapi = 'https://api.sayobot.cn'
@@ -36,13 +34,13 @@ async def get_api_info(project, id=0, mode='osu', mapid=0):
         elif project == 'map':
             url = f'{api}/beatmaps/{mapid}'
         else:
-            print('Project Error')
+            hoshino.logger.info('Project Error')
             return
         return await return_info(project, url)
     except:
         return False
 
-async def get_sayoapi_info(project, mode=1, status=1, keyword=None, bmapid=0):
+async def get_sayoapi_info(project, mode=1, status=1, keyword=None, setid=0):
     try:
         if project == 'search':
             data = {
@@ -57,10 +55,10 @@ async def get_sayoapi_info(project, mode=1, status=1, keyword=None, bmapid=0):
             url = f'{sayoapi}/?post'
             data = json.dumps(data)
         elif project == 'mapinfo':
-            url = f'{sayoapi}/v2/beatmapinfo?0={bmapid}'
+            url = f'{sayoapi}/v2/beatmapinfo?0={setid}'
             data = None
         else:
-            print('Project Error')
+            hoshino.logger.info('Project Error')
             return
         return await return_info(project, url, data)
     except:
@@ -109,6 +107,7 @@ async def return_info(project, url, data=None):
                         return 'API请求失败，请联系管理员或稍后再尝试'
                     return await req.json()
     except Exception as e:
+        hoshino.logger.error(e)
         return e
 
 async def get_access_token():
@@ -126,7 +125,8 @@ async def get_access_token():
                 if req.status != 200:
                     return 'OAuth 认证失败'
                 newtoken = await req.json()
-    except:
+    except Exception as e:
+        hoshino.logger.error(f'OAuth Certification Error: {e}')
         return 'OAuth 认证失败'
     new_json = {
         'client_id' : token[2],
@@ -139,5 +139,5 @@ async def get_access_token():
             json.dump(new_json, f, ensure_ascii=False, indent=2)
     except:
         traceback.print_exc()
+    hoshino.logger.info('OAuth Certification Successful')
     return 'OAuth 认证令牌更新完毕'
-    
