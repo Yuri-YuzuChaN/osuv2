@@ -331,7 +331,12 @@ async def search(bot, ev:CQEvent):
     elif word[0].lower() == '-s' or word[0].lower() == '-c':
         op = word[0][1:]
         del word[0]
-
+    if op == 's':
+        op = False
+    elif op == 'c':
+        op = True
+    else:
+        await bot.finish(ev, '请输入正确的搜索引擎', at_sender=True)
     if 'rs=' in word[-1]:
         try:
             status = int(word[-1][3:])
@@ -356,26 +361,26 @@ async def bmap(bot, ev:CQEvent):
     if len(msg) == 1:
         if not msg[0].isdigit():
             await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
-        bmapid = msg[0]
+        setid = msg[0]
     elif msg[0] == '-b':
         if not msg[1].isdigit():
             await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
         op = True
-        bmapid = msg[1]
+        setid = msg[1]
     else:
         await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
-    info = await bmap_info(bmapid, op)
+    info = await bmap_info(setid, op)
     await bot.send(ev, info)
 
 @sv.on_prefix(('osudl', 'Osudl', 'OSUDL'))
 async def osudl(bot, ev:CQEvent):
     gid = ev.group_id
-    bmapid = ev.message.extract_plain_text().strip()
-    if not bmapid:
+    setid = ev.message.extract_plain_text().strip()
+    if not setid:
         return
-    if not bmapid.isdigit():
+    if not setid.isdigit():
         await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
-    file = await MapDownload(bmapid, True)
+    file = await MapDownload(setid, True)
     await bot.upload_group_file(group_id=gid, file=file[0], name=file[1])
     os.remove(file[0])
 
@@ -463,4 +468,4 @@ async def update_info():
     result = esql.get_all_id()
     for n, uid in enumerate(result):
         await user(uid[0], True)
-    print(f'已更新{n+1}位玩家数据')
+    hoshino.logger.info(f'已更新{n+1}位玩家数据')
