@@ -34,4 +34,4 @@ if __name__ == '__main__' :
     else:
         name = '请重新进行第三步.json'
     with open(name, 'w', encoding='utf-8') as f:
-        json.dump(get_access_token(), f, ensure_ascii=False, indent=2)
+        json.dump(token, f, ensure_ascii=False, indent=2)
