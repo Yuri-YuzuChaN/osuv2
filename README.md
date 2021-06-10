@@ -8,7 +8,7 @@
 
 1. 将该项目放在HoshinoBot插件目录 `modules` 下，或者clone本项目 `git clone https://github.com/Yuri-YuzuChaN/osuv2`
 2. 在`token.json`填入申请的`client_id`，`client_secret`，`access_token`，`refresh_token`，[如何申请token](#如何申请token)
-3. 修改`draw.py`文件中的`FILEHTTP`字符串，将地址改为自己的服务器IP或域名，`:{PORT}/map`请勿删除
+3. 修改`http.py`文件中的`FILEHTTP`字符串，将地址改为自己的服务器IP或域名，`:{PORT}/map`请勿删除
 4. pip以下依赖：`pillow`，`pyttanko`，`matplotlib`，`traceback`, `Maniera`，`filetype`
 5. 在`config/__bot__.py`模块列表中添加`osuv2`
 6. 重启HoshinoBot
@@ -53,51 +53,51 @@
 7. 如果实在申请不到，可以联系我进行一对一教学（  QQ：806235364
 
 ## 指令说明
-| 指令   | 功能             | 可选参数                        | 说明                                                         |
-| :----- | :--------------- | :------------------------------ | :----------------------------------------------------------- |
-| osuhelp| 查看指令大全      |                                |                                                              |
-| info   | 查询信息         | 无                              | 查询自己                                                     |
-|        |                  | [user]                          | 查询TA人                                                     |
-|        |                  | :[mode]                         | 查询自己其它模式，`:`为触发词                                |
-|        |                  | [user] :[mode]                  | 查询TA人其它模式                                             |
-| bind   | 绑定             | [user]                          | 绑定用户名                                                   |
-| unbind | 解绑             | 无                              |                                                              |
-| update | 更改或更新       | mode [mode]                     | 更改模式                                                     |
-|        |                  | [icon]                          | 更新自己的头像和头图                                         |
-| recent | 查询最近游玩记录 | 无                              | 查询自己最近的游玩记录                                       |
-|        |                  | [user]                          | 查询TA人最近的游玩记录                                       |
-|        |                  | :[mode]                         | 查询自己最近游玩其它模式记录，`:`为触发词                    |
-|        |                  | [user] :[mode]                  | 查询TA人最近游玩其它模式记录                                 |
-| score  | 查询成绩         | [mapid]                         | 查询地图成绩                                                 |
-|        |                  | [mapid] :[mode]                 | 查询地图其它模式成绩，`:`为触发词                            |
-|        |                  | [user] [mapid]                  | 查询TA人地图成绩                                             |
-|        |                  | [user] [mapid] :[mode]          | 查询TA人地图其它模式成绩                                     |
-| bp     | 查询bp榜成绩     | [num]                           | 查询bp成绩                                                   |
-|        |                  | [num] [+mods]                   | 查询bp附加mods成绩，`+`为mods触发词，多mods之间使用半角逗号  |
-|        |                  | [mode] [num]                    | 查询其他模式的bp成绩                                         |
-|        |                  | [user] [num]                    | 查询TA人bp成绩                                               |
-|        |                  | [user] [num] +[mods]            | 查询TA人bp附加mods成绩                                       |
-|        |                  | [mode] [user] [num]             | 查询TA人其他模式bp成绩                                       |
-|        |                  | [mode] [user] [num] +[mods]     | 查询TA人其他模式加mods的bp成绩                               |
-|        |                  | [min-max]                       | 查询bp范围内成绩，最多10个                                   |
-|        |                  | [mode] [min-max]                | 查询其它模式bp范围内成绩                                     |
-|        |                  | [min-max] +[mods]               | 查询bp范围内加mods的成绩，`+`为mods触发词，多mods之间使用半角逗号 |
-|        |                  | [mode] [min-max] +[mods]        | 查询其它模式bp范围内加mods的成绩                             |
-|        |                  | [user] [min-max]                | 查询TA人bp，`-`为范围触发词，最多10个                        |
-|        |                  | [mode] [user] [min-max]         | 查询TA人其它模式bp                                           |
-|        |                  | [user] [min-max] +[mods]        | 查询TA人bp，`+`为mods触发词，多mods之间使用半角逗号          |
-|        |                  | [mode] [user] [min-max] +[mods] | 查询TA人其它模式bp范围内加mods的成绩                         |
-| map    | 查询地图信息     | [mapid]                         | 查询地图信息                                                 |
-|        |                  | [mapid] +[mods]                 | 查询地图加mod的信息，仅计算PP                                |
-| getbg  | 提取背景         | [mapid]                         | 提取地图背景                                                 |
-| smap   | 查询地图         | [keyword]                       | 查询关键词的地图，默认搜索std模式ranked状态                  |
-|        |                  | -c [keyword]                    | 同上，使用血猫搜索，`-s`为使用sayobot搜索                    |
-|        |                  | [mode] [keyword]                | 查询其它模式ranked状态的关键词地图                           |
-|        |                  | [keyword] rs=[status]           | 查询关键词的地图，`rs=`为状态触发词，`status`为数字          |
-|        |                  | [mode] [keyword] rs=[status]    | 查询其它模式和状态的关键词地图                               |
-| bmap   | 查询图组信息     | [bmapid]                        | 查询图组信息                                                 |
-|        |                  | -b [mapid]                      | 使用地图id查询图组信息                                       |
-| osudl  | 下载地图上传到群 | [bmapid]                        | 下载地图，`bmapid`为图组id，非单图id                         |
+| 指令    | 功能             | 可选参数                        | 说明                                                         |
+| :------ | :--------------- | :------------------------------ | :----------------------------------------------------------- |
+| osuhelp | 查看指令大全     |                                 |                                                              |
+| info    | 查询信息         | 无                              | 查询自己                                                     |
+|         |                  | [user]                          | 查询TA人                                                     |
+|         |                  | :[mode]                         | 查询自己其它模式，`:`为触发词                                |
+|         |                  | [user] :[mode]                  | 查询TA人其它模式                                             |
+| bind    | 绑定             | [user]                          | 绑定用户名                                                   |
+| unbind  | 解绑             | 无                              |                                                              |
+| update  | 更改或更新       | mode [mode]                     | 更改模式                                                     |
+|         |                  | [icon]                          | 更新自己的头像和头图                                         |
+| recent  | 查询最近游玩记录 | 无                              | 查询自己最近的游玩记录                                       |
+|         |                  | [user]                          | 查询TA人最近的游玩记录                                       |
+|         |                  | :[mode]                         | 查询自己最近游玩其它模式记录，`:`为触发词                    |
+|         |                  | [user] :[mode]                  | 查询TA人最近游玩其它模式记录                                 |
+| score   | 查询成绩         | [mapid]                         | 查询地图成绩                                                 |
+|         |                  | [mapid] :[mode]                 | 查询地图其它模式成绩，`:`为触发词                            |
+|         |                  | [user] [mapid]                  | 查询TA人地图成绩                                             |
+|         |                  | [user] [mapid] :[mode]          | 查询TA人地图其它模式成绩                                     |
+| bp      | 查询bp榜成绩     | [num]                           | 查询bp成绩                                                   |
+|         |                  | [num] [+mods]                   | 查询bp附加mods成绩，`+`为mods触发词，多mods之间使用半角逗号  |
+|         |                  | [mode] [num]                    | 查询其他模式的bp成绩                                         |
+|         |                  | [user] [num]                    | 查询TA人bp成绩                                               |
+|         |                  | [user] [num] +[mods]            | 查询TA人bp附加mods成绩                                       |
+|         |                  | [mode] [user] [num]             | 查询TA人其他模式bp成绩                                       |
+|         |                  | [mode] [user] [num] +[mods]     | 查询TA人其他模式加mods的bp成绩                               |
+|         |                  | [min-max]                       | 查询bp范围内成绩，最多10个                                   |
+|         |                  | [mode] [min-max]                | 查询其它模式bp范围内成绩                                     |
+|         |                  | [min-max] +[mods]               | 查询bp范围内加mods的成绩，`+`为mods触发词，多mods之间使用半角逗号 |
+|         |                  | [mode] [min-max] +[mods]        | 查询其它模式bp范围内加mods的成绩                             |
+|         |                  | [user] [min-max]                | 查询TA人bp，`-`为范围触发词，最多10个                        |
+|         |                  | [mode] [user] [min-max]         | 查询TA人其它模式bp                                           |
+|         |                  | [user] [min-max] +[mods]        | 查询TA人bp，`+`为mods触发词，多mods之间使用半角逗号          |
+|         |                  | [mode] [user] [min-max] +[mods] | 查询TA人其它模式bp范围内加mods的成绩                         |
+| map     | 查询地图信息     | [mapid]                         | 查询地图信息                                                 |
+|         |                  | [mapid] +[mods]                 | 查询地图加mod的信息，仅计算PP                                |
+| getbg   | 提取背景         | [mapid]                         | 提取地图背景                                                 |
+| smap    | 查询地图         | [keyword]                       | 查询关键词的地图，默认搜索std模式ranked状态                  |
+|         |                  | -c [keyword]                    | 同上，使用血猫搜索，`-s`为使用sayobot搜索                    |
+|         |                  | [mode] [keyword]                | 查询其它模式ranked状态的关键词地图                           |
+|         |                  | [keyword] rs=[status]           | 查询关键词的地图，`rs=`为状态触发词，`status`为数字          |
+|         |                  | [mode] [keyword] rs=[status]    | 查询其它模式和状态的关键词地图                               |
+| bmap    | 查询图组信息     | [setid]                         | 查询图组信息                                                 |
+|         |                  | -b [mapid]                      | 使用地图id查询图组信息                                       |
+| osudl   | 下载地图上传到群 | [setid]                         | 下载地图                                                     |
 
 `status`：0-5分别为Ranked，Qualified，Loved，Pending，WIP，Graveyard
 
@@ -108,6 +108,14 @@
 1. ~~pp+数据~~
 
 ## 更新说明
+
+**2021-06-11**
+
+1. 为区分图组与单图，已将图组`bmapid`修改为`setid`
+2. 修复地图在没有背景制图错误的问题
+3. 修复`get_token.py`无法申请token的问题
+4. 修改报错提示
+5. 将`draw.py`文件的`FILEHTTP`字符串移至`http.py`
 
 **2021-05-29**
 
