@@ -1,9 +1,11 @@
 import nonebot, os, filetype
+from hoshino.config import PORT
 from quart import request, make_response
 
 PATH = os.path.join(os.path.dirname(__file__), 'osufile', 'map')
-
 app = nonebot.get_bot().server_app
+
+FILEHTTP = f'http://xxxxxx.com:{PORT}/map'
 
 @app.route('/map/<int:mapid>/<string:filename>')
 async def music(mapid, filename):
