@@ -469,8 +469,9 @@ async def draw_score(project, id, mode, **kwargs):
         #新建图片
         im = Image.new('RGBA', (1500, 800))
         #获取cover并裁剪，高斯，降低亮度
-        cover = await get_project_img('cover', coverurl, mapid)
-        cover_crop = crop_bg(cover, 'BG')
+        cover = get_pic_music('pic', version_osu)
+        cover_path = os.path.join(dirpath, cover)
+        cover_crop = crop_bg(cover_path, 'BG')
         cover_gb = cover_crop.filter(ImageFilter.GaussianBlur(1))
         cover_img = ImageEnhance.Brightness(cover_gb).enhance(2 / 4.0)
         im.alpha_composite(cover_img, (0, 200))
