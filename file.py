@@ -17,7 +17,7 @@ async def MapDownload(setid, DL=False):
     setid = str(setid)
     if not DL:
         for file in os.listdir(mapfile):
-            if setid in file:
+            if setid == file:
                 if os.path.exists(os.path.join(mapfile, file)):
                     return os.path.join(mapfile, file)
     url = f'https://txy1.sayobot.cn/beatmaps/download/novideo/{setid}'
