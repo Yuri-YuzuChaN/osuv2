@@ -1,4 +1,4 @@
-import aiohttp, os, re, zipfile, aiohttp, shutil, hoshino
+import aiohttp, os, re, zipfile, shutil, hoshino, io
 
 osufile = os.path.join(os.path.dirname(__file__), 'osufile')
 mapfile = os.path.join(osufile, 'map')
@@ -29,9 +29,9 @@ async def MapDownload(setid, DL=False):
         hoshino.logger.error('Request Failed or Timeout')
         return
     if DL:
-        filename = await get_osz(sayo, setid, True)
+        filename = await OszFileDl(sayo, setid, True)
         return os.path.join(mapfile, filename), filename
-    filename = await get_osz(sayo, setid)
+    filename = await OszFileDl(sayo, setid)
     filepath = os.path.join(mapfile, filename)
     # 解压下载的osz文件
     myzip = zipfile.ZipFile(filepath)
@@ -39,11 +39,11 @@ async def MapDownload(setid, DL=False):
     myzip.extractall(mystr[0])
     myzip.close()
     #删除文件
-    remove_file(filepath[:-4])
+    removefile(filepath[:-4])
     os.remove(filepath)
     return filepath[:-4]
 
-async def get_osz(sayo, setid, DL=False):
+async def OszFileDl(sayo, setid, DL=False):
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(sayo) as req:
@@ -58,14 +58,14 @@ async def get_osz(sayo, setid, DL=False):
         hoshino.logger.error(f'Map: <{setid}> Download Failed')
         return
 
-def remove_file(path):
+def removefile(path):
     s = []
     for file in os.listdir(path):
         if '.osu' in file:
-            bg = get_pic_music('pic', os.path.join(path, file))
+            bg = get_picmusic('pic', os.path.join(path, file))
             if bg not in s:
                 s.append(bg)
-            music = get_pic_music('music', os.path.join(path, file))
+            music = get_picmusic('music', os.path.join(path, file))
             if music not in s:
                 s.append(music)
             s.append(file)
@@ -79,7 +79,7 @@ def remove_file(path):
     
     return True
 
-def get_file(path, mapid, version):
+def get_osufile(path, mapid, version):
     for file in os.listdir(path):
         if '.osu' in file:
             with open(os.path.join(path, file), 'r', encoding='utf-8') as f:
@@ -90,12 +90,14 @@ def get_file(path, mapid, version):
                 if str(mapid) == rmapid:
                     filepath = os.path.join(path, file)
                     return filepath
-    for file in os.listdir(path):
-        if version in file:
-            filepath = os.path.join(path, file)
-            return filepath
+            ver = re.search(r'Version:(.+)', text)
+            if ver:
+                mapver = result.group(1)
+                if version == mapver:
+                    filepath = os.path.join(path, file)
+                    return filepath
 
-def get_pic_music(project, path):
+def get_picmusic(project, path):
     if project == 'pic':
         sre = r'\d,\d,\"(.+)\"'
     elif project == 'music':
@@ -107,33 +109,19 @@ def get_pic_music(project, path):
     result = re.search(sre, text)
     return result.group(1).strip()
 
-async def get_project_img(project, url, uid=0, update=False):
-    uid = str(uid)
-    if project == 'cover':
-        name = f'{uid}_cover.png'
-    elif project == 'icon':
-        name = f'{uid}_icon.png'
-    elif project == 'header':
-        name = f'{uid}_headericon.png'
-    elif project == 'badges':
-        result = re.match(r'https://assets.ppy.sh/profile-badges/(.+)', url)
-        name = result.group(1)
-    else:
-        raise 'project error'
-    if project == 'badges':
-        path = os.path.join(badges, name)
-    elif project == 'cover':
-        path = os.path.join(coverfile, name)
-    else:
+async def get_projectimg(url, project=None, uid=0, update=False):
+    name = None
+    if project:
+        if project == 'icon':
+            name = f'{uid}_icon.png'
+        elif project == 'header':
+            name = f'{uid}_headericon.png'
         path = os.path.join(iconfile, name)
-    if not update:
-        if project == 'badges':
-            lpath = badges
-        else:
-            lpath = iconfile
-        for file in os.listdir(lpath):
-            if name in file:
-                return path
+    if name:
+        if not update:
+            for file in os.listdir(iconfile):
+                if name in file:
+                    return path
     try:
         if 'avatar-guest.png' in url:
             url = 'https://osu.ppy.sh/images/layout/avatar-guest.png'
@@ -141,16 +129,18 @@ async def get_project_img(project, url, uid=0, update=False):
             async with session.get(url) as req:
                 if req.status == 403:
                     return os.path.join(osufile, 'work', 'mapbg.png')
-                chunk = await req.read()
-                open(path, 'wb').write(chunk)
-        if update:
-            return True
-        return path
+                if project:
+                    chunk = await req.read()
+                    open(path, 'wb').write(chunk)
+                    return True if update else path
+                data = await req.read()
+                im = io.BytesIO(data)
+        return im
     except Exception as e:
         hoshino.logger.error(f'Image Failed: {e}')
         return e
 
-def get_mode_img(mode, diff=None):
+def get_modeimage(mode, diff=None):
     if diff:
         if mode == 0:
             img = f'std_{diff}.png'
