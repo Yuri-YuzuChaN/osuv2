@@ -5,7 +5,7 @@ sayoapi = 'https://api.sayobot.cn'
 chimuapi = 'https://api.chimu.moe/cheesegull/search'
 token_json = os.path.join(os.path.dirname(__file__), 'token.json')
 
-def get_token_json():
+def osutoken():
     with open(token_json, encoding='utf-8') as f:
         i = json.load(f)
         client_id = i["client_id"]
@@ -14,11 +14,11 @@ def get_token_json():
         refresh_token = i['refresh_token']
     return access_token, refresh_token, client_id, client_secret
 
-async def get_api_info(project, id=0, mode='osu', mapid=0):
+async def OsuApi(project, id=0, mode='osu', mapid=0):
     try:
-        if not str(id).isdigit():
+        if id:
             url = f'{api}/users/{id}'
-            info = await return_info(project, url)
+            info = await ApiInfo(project, url)
             id = info['id']
         if project == 'info' or project == 'bind' or project == 'update':
             url = f'{api}/users/{id}/{mode}'
@@ -34,13 +34,12 @@ async def get_api_info(project, id=0, mode='osu', mapid=0):
         elif project == 'map':
             url = f'{api}/beatmaps/{mapid}'
         else:
-            hoshino.logger.info('Project Error')
-            return
-        return await return_info(project, url)
+            raise 'Project Error'
+        return await ApiInfo(project, url)
     except:
         return False
 
-async def get_sayoapi_info(project, mode=1, status=1, keyword=None, setid=0):
+async def SayoApi(project, mode=1, status=1, keyword=None, setid=0):
     try:
         if project == 'search':
             data = {
@@ -58,13 +57,12 @@ async def get_sayoapi_info(project, mode=1, status=1, keyword=None, setid=0):
             url = f'{sayoapi}/v2/beatmapinfo?0={setid}'
             data = None
         else:
-            hoshino.logger.info('Project Error')
-            return
-        return await return_info(project, url, data)
+            raise 'Project Error'
+        return await ApiInfo(project, url, data)
     except:
         return False
 
-async def get_chimuapi_info(mode, status, keyword):
+async def ChimuApi(mode, status, keyword):
     try:
         url = f'{chimuapi}?query={keyword}&amount=10&status={status}&mode={mode}'
         async with aiohttp.ClientSession() as session:
@@ -75,11 +73,11 @@ async def get_chimuapi_info(mode, status, keyword):
     except:
         return False
 
-async def return_info(project, url, data=None):
+async def ApiInfo(project, url, data=None):
     try:
         if not data:
             if project != 'mapinfo':
-                headers = {'Authorization' : f'Bearer {get_token_json()[0]}'}
+                headers = {'Authorization' : f'Bearer {osutoken()[0]}'}
             else:
                 headers = {'user-agent' : 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36'}
             async with aiohttp.ClientSession() as session:
@@ -110,8 +108,8 @@ async def return_info(project, url, data=None):
         hoshino.logger.error(e)
         return e
 
-async def get_access_token():
-    token = get_token_json()
+async def get_accesstoken():
+    token = osutoken()
     url = 'https://osu.ppy.sh/oauth/token'
     data = {
         'grant_type' : 'refresh_token',
@@ -123,7 +121,8 @@ async def get_access_token():
         async with aiohttp.ClientSession() as session:
             async with session.post(url, data=data) as req:
                 if req.status != 200:
-                    return 'OAuth 认证失败'
+                    hoshino.logger.error(f'OAuth Certification Error: {req.status}')
+                    return f'OAuth 认证失败 {req.status}'
                 newtoken = await req.json()
     except Exception as e:
         hoshino.logger.error(f'OAuth Certification Error: {e}')
