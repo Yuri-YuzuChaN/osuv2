@@ -1,5 +1,3 @@
-# from .pp import *
-
 mods = {
     '0'         :       'NO',
     '1'         :       'NF',
@@ -58,19 +56,27 @@ def resolve(value):
         if value == 0:
             break
 
-    return mod_name(result)
+    return modsname(result)
 
-def mod_name(result):
+def modsname(result):
     mods_name = []
     for i in result:
         mods_name.append(mods[f'{i}'])
     return mods_name
 
-def get_mods_num(mod):
+def modsnum(mod):
     newmod = {value: key for key, value in mods.items()}
-    modsnum = 0
+    num = 0
     for i in mod:
-        name = i.upper()
-        mn = int(newmod[f'{name}'])
-        modsnum+=mn
-    return modsnum
+        mn = int(newmod[str(i.upper())])
+        num += mn
+    return num
+
+def setmodslist(json, mods):
+    vnum =[]
+    for index, v in enumerate(json):
+        if v['mods']:
+            num = modsnum(v['mods'])
+            if num == mods:
+                vnum.append(index)
+    return vnum
