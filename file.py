@@ -6,7 +6,7 @@ iconfile = os.path.join(osufile, 'icon')
 badges = os.path.join(osufile, 'badges')
 coverfile = os.path.join(osufile, 'cover')
 
-for item in ['badges', 'cover', 'icon', 'map', 'output']:
+for item in ['icon', 'map', 'output']:
     RES = os.path.join(osufile, item)
     if not os.path.exists(RES):
         os.makedirs(RES)
