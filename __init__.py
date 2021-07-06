@@ -1,14 +1,15 @@
 from hoshino.config import SUPERUSERS
 from hoshino import Service, priv
-from hoshino.typing import CQEvent
+from hoshino.service import sucmd
+from hoshino.typing import CQEvent, CommandSession
 from nonebot import get_bot
 import re, os
 
 from .sql import *
 from .draw import *
 from .file import MapDownload
-from .api import get_access_token
-from .mods import get_mods_num
+from .api import get_accesstoken
+from .mods import modsnum
 
 sv = Service('osuv2', manage_priv=priv.ADMIN, enable_on_default=True)
 helpimg = os.path.join(os.path.dirname(__file__), 'osufile', 'help.png')
@@ -222,9 +223,8 @@ async def bp(bot, ev:CQEvent):
     if not msg:
         await bot.finish(ev, '请输入正确的参数', at_sender=True)
     elif 'CQ:at' in str(ev.message):
-        result = re.finditer(r'\[CQ:at,qq=(.*)\]', str(ev.message))
-        for i in result:
-            uid = int(i.groups()[0])
+        result = re.search(r'\[CQ:at,qq=(.*)\]', str(ev.message))
+        uid = int(result.group(1))
     if '+' in msg[-1]:
         msg[-1] = msg[-1].upper()
         mods = msg[-1][1:].split(',')
@@ -303,7 +303,7 @@ async def map(bot, ev:CQEvent):
     elif not mapid[0].isdigit():
         await bot.finish(ev, '请输入正确的地图ID', at_sender=True)
     if '+' in mapid[-1]:
-        mods = get_mods_num(mapid[-1][1:].split(','))
+        mods = modsnum(mapid[-1][1:].split(','))
         del mapid[-1]
     info = await map_info(mapid[0], mods)
     if isinstance(info, tuple): 
@@ -456,9 +456,14 @@ async def get_bg(bot, ev:CQEvent):
 async def recent(bot, ev:CQEvent):
     await bot.send(ev, f'[CQ:image,file=file:///{helpimg}]')
 
+@sucmd('updateoauth', aliases=('更新OAuth'))
+async def updateoauth(session: CommandSession):
+    msg = await get_accesstoken()
+    await session.send(msg)
+
 @sv.scheduled_job('cron', hour='23')
 async def refresh_token_():
-    msg = await get_access_token()
+    msg = await get_accesstoken()
     bot = get_bot()
     for user_id in SUPERUSERS:
         await bot.send_msg(user_id=user_id, message=msg)
