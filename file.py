@@ -3,8 +3,6 @@ import aiohttp, os, re, zipfile, shutil, hoshino, io
 osufile = os.path.join(os.path.dirname(__file__), 'osufile')
 mapfile = os.path.join(osufile, 'map')
 iconfile = os.path.join(osufile, 'icon')
-badges = os.path.join(osufile, 'badges')
-coverfile = os.path.join(osufile, 'cover')
 
 for item in ['icon', 'map', 'output']:
     RES = os.path.join(osufile, item)
