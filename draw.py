@@ -1035,8 +1035,8 @@ async def user(id, update=False):
             if new:
                 continue
         userinfo = await OsuApi('update', id, GM[mode])
-        info = UserInfo(userinfo)
-        if info.play_count != 0:
+        if userinfo['statistics']['play_count'] != 0:
+            info = UserInfo(userinfo)
             if update:
                 esql.update_all_info(id, info.crank, info.grank, info.pp, info.acc, info.play_count, info.play_hits, mode)
             else:
