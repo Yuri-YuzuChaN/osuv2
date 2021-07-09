@@ -370,9 +370,9 @@ async def draw_score(project: str,
             pp = int(info.pp) if info.pp != -1 else _pp
             ifpp = calc_mania_pp(version_osu, setmods, 1000000)
         elif project == 'recent' and info.mode != 0:
-            _pp, aim_pp, speed_pp, acc_pp = '--', '--', '--', '--'
+            pp, aim_pp, speed_pp, acc_pp = '--', '--', '--', '--'
         else:
-            _pp, aim_pp, speed_pp, acc_pp = int(info.pp), '--', '--', '--'
+            pp, aim_pp, speed_pp, acc_pp = int(info.pp), '--', '--', '--'
         #新建图片
         im = Image.new('RGBA', (1500, 800))
         #获取cover并裁剪，高斯，降低亮度
