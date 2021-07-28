@@ -1,6 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 from datetime import datetime, timedelta
-import hoshino, os, asyncio, io
+import hoshino, os, asyncio, io, math
 import matplotlib.pyplot as plt
 
 from .api import OsuApi, ChimuApi, SayoApi
@@ -153,21 +153,64 @@ def crop_bg(size, path):
     else:
         return bg
 
-def stars_diff(stars):
-    diff = ''
-    if 0 <= stars < 2.0:
-        diff = 'easy'
-    elif 2.0 <= stars < 2.7:
-        diff = 'normal'
-    elif 2.7 <= stars < 4.0:
-        diff = 'hard'
-    elif 4.0 <= stars < 5.3:
-        diff = 'insane'
-    elif 5.3 <= stars < 6.5:
-        diff = 'expert'
-    elif 6.5 <= stars :
-        diff = 'expertplus'
-    return diff
+def stars_diff(mode, stars):
+    if mode == 0:
+        mode = 'std'
+    elif mode == 1:
+        mode = 'taiko'
+    elif mode == 2:
+        mode = 'ctb'
+    elif mode == 3:
+        mode = 'mania'
+    else:
+        mode = 'stars'
+    default = 115
+    if 0 <= stars < 2:
+        xp = 0
+        default = 240
+    elif 2 <= stars < 3:
+        xp = 240
+    elif 3 <= stars < 4:
+        xp = 355
+    elif 4 <= stars < 5:
+        xp = 470
+    elif 5 <= stars < 6:
+        xp = 585
+    elif 6 <= stars < 7:
+        xp = 700
+    elif 7 <= stars < 8:
+        xp = 815
+    else:
+        return Image.open(os.path.join(osufile, 'work', f'{mode}_expertplus.png')).convert('RGBA')
+    os.path.join(osufile, 'work', )
+    # 取色
+    x = (stars - math.floor(stars)) * default + xp
+    color = Image.open(os.path.join(osufile, 'work', 'color.png')).load()
+    r, g, b = color[x, 1]
+    # 打开底图
+    im = Image.open(os.path.join(osufile, 'work', f'{mode}.png')).convert('RGBA')
+    xx, yy = im.size
+    # 填充背景
+    sm = Image.new('RGBA', im.size, (r, g, b))
+    sm.paste(im, (0, 0, xx, yy), im)
+    # 把白色变透明
+    for i in range(xx):
+        for z in range(yy):
+            data = sm.getpixel((i, z))
+            if (data.count(255) == 4):
+                sm.putpixel((i, z), (255, 255, 255, 0))
+    return sm
+
+def get_modeimage(mode):
+    if mode == 0:
+        img = 'pfm_std.png'
+    elif mode == 1:
+        img = 'pfm_taiko.png'
+    elif mode == 2:
+        img = 'pfm_ctb.png'
+    else:
+        img = 'pfm_mania.png'
+    return os.path.join(osufile, img)
 
 def calc_songlen(len):
     map_len = list(divmod(int(len), 60))
@@ -333,7 +376,7 @@ async def draw_score(project: str,
     try:
         scoreJson = await OsuApi(project, id, mode, mapid)
         if not scoreJson:
-            return '未查询到最近游玩的记录'
+            return '未查询到游玩记录'
         elif isinstance(scoreJson, str):
             return scoreJson
         info = ScoreInfo(scoreJson)
@@ -387,13 +430,12 @@ async def draw_score(project: str,
         recent_bg = Image.open(BG).convert('RGBA')
         im.alpha_composite(recent_bg)
         #模式
-        diff_name = stars_diff(mapinfo.diff)
-        mode_bg = get_modeimage(info.mode, diff_name)
-        mode_img = Image.open(mode_bg).convert('RGBA').resize((30, 30))
+        mode_bg = stars_diff(mapinfo.mode, mapinfo.diff)
+        mode_img = mode_bg.resize((30, 30))
         im.alpha_composite(mode_img, (75, 154))
         #难度星星
-        stars_bg = os.path.join(osufile, 'work', f'stars_{stars_diff(mapinfo.diff)}.png')
-        stars_img = Image.open(stars_bg).convert('RGBA').resize((23, 23))
+        stars_bg = stars_diff('stars', mapinfo.diff)
+        stars_img = stars_bg.resize((23, 23))
         im.alpha_composite(stars_img, (134, 158))
         #mods
         if info.mods:
@@ -464,7 +506,7 @@ async def draw_score(project: str,
             difflen = int(250 * i / 10) if i <= 10 else 250
             diff_len = Image.new('RGBA', (difflen, 8), color)
             im.alpha_composite(diff_len, (1190, 386 + 35 * num))
-            w_diff = datatext(1470, 386 + 35 * num, 20, f'{i:.1f}', Torus_SemiBold, anchor='mm')
+            w_diff = datatext(1470, 386 + 35 * num, 20, i, Torus_SemiBold, anchor='mm')
             im = draw_text(im, w_diff)
         # 时长 - 滑条
         diffinfo = calc_songlen(mapinfo.total_len), mapinfo.bpm, mapinfo.c_circles, mapinfo.c_sliders
@@ -681,9 +723,8 @@ async def map_info(mapid, mods):
         mapbg = Image.open(map_bg).convert('RGBA')
         im.alpha_composite(mapbg)
         #模式
-        diff_name = stars_diff(mapinfo.diff)
-        mode_bg = get_modeimage(mapinfo.mode, diff_name)
-        mode_img = Image.open(mode_bg).convert('RGBA').resize((50, 50))
+        mode_bg = stars_diff(mapinfo.mode, mapinfo.diff)
+        mode_img = mode_bg.resize((50, 50))
         im.alpha_composite(mode_img, (50, 100))
         #cs - diff
         for num, i in enumerate(mapinfo.mapdiff):
@@ -817,9 +858,8 @@ async def search_map(project, mode, status, keyword, op=False):
             for num, cmap in enumerate(gmap):
                 if num < 10:
                     songinfo.mapinfo(cmap)
-                    diffname = stars_diff(songinfo.star)
-                    mode_bg = get_modeimage(songinfo.mode, diffname)
-                    mode_img = Image.open(mode_bg).convert('RGBA').resize((50, 50))
+                    mode_bg = stars_diff(songinfo.mode, songinfo.star)
+                    mode_img = mode_bg.resize((50, 50))
                     im.alpha_composite(mode_img, (25 + 60 * num, 215  + pnum))
                     w_diff = datatext(50 + 60 * num, 280 + pnum, 20, songinfo.star, Torus_SemiBold, anchor='mm')
                     im = draw_text(im, w_diff)
@@ -934,13 +974,12 @@ async def bmap_info(mapid, op=False):
                 h_num = 102 * num
                 songinfo.mapinfo(cmap)
                 #难度
-                diff_name = stars_diff(songinfo.star)
-                mode_bg = get_modeimage(songinfo.mode, diff_name)
-                mode_img = Image.open(mode_bg).convert('RGBA').resize((20, 20))
+                mode_bg = stars_diff(songinfo.mode, songinfo.star)
+                mode_img = mode_bg.resize((20, 20))
                 im.alpha_composite(mode_img, (20, 320 + h_num))
                 #星星
-                stars_bg = os.path.join(osufile, 'work', f'stars_{diff_name}.png')
-                stars_img = Image.open(stars_bg).convert('RGBA').resize((20, 20))
+                stars_bg = stars_diff('stars', songinfo.star)
+                stars_img = stars_bg.resize((20, 20))
                 im.alpha_composite(stars_img, (50, 320 + h_num))
                 #diff
                 bar_bg = os.path.join(osufile, 'work', 'bmap.png')
@@ -1038,12 +1077,12 @@ async def user(id, update=False):
         if userinfo['statistics']['play_count'] != 0:
             info = UserInfo(userinfo)
             if update:
-                esql.update_all_info(id, info.crank, info.grank, info.pp, info.acc, info.play_count, info.play_hits, mode)
+                esql.update_all_info(id, info.crank, info.grank, info.pp, round(info.acc, 2), info.play_count, info.play_hits, mode)
             else:
-                esql.insert_all_info(id, info.crank, info.grank, info.pp, info.acc, info.play_count, info.play_hits, mode)
+                esql.insert_all_info(id, info.crank, info.grank, info.pp, round(info.acc, 2), info.play_count, info.play_hits, mode)
         else:
             if update:
                 esql.update_all_info(id, 0, 0, 0, 0, 0, 0, mode)
             else:
                 esql.insert_all_info(id, 0, 0, 0, 0, 0, 0, mode)
-        log.info(f'玩家:[{info.username}] {GM[mode]}模式 个人信息更新完毕')
+        log.info(f'玩家:[{userinfo["username"]}] {GM[mode]}模式 个人信息更新完毕')
