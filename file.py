@@ -137,25 +137,3 @@ async def get_projectimg(url, project=None, uid=0, update=False):
     except Exception as e:
         hoshino.logger.error(f'Image Failed: {e}')
         return e
-
-def get_modeimage(mode, diff=None):
-    if diff:
-        if mode == 0:
-            img = f'std_{diff}.png'
-        elif mode == 1:
-            img = f'taiko_{diff}.png'
-        elif mode == 2:
-            img = f'ctb_{diff}.png'
-        else:
-            img = f'mania_{diff}.png'
-        return os.path.join(osufile, 'work', img)
-    else:
-        if mode == 0:
-            img = 'pfm_std.png'
-        elif mode == 1:
-            img = 'pfm_taiko.png'
-        elif mode == 2:
-            img = 'pfm_ctb.png'
-        else:
-            img = 'pfm_mania.png'
-        return os.path.join(osufile, img)
