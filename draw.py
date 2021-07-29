@@ -165,9 +165,12 @@ def stars_diff(mode, stars):
     else:
         mode = 'stars'
     default = 115
-    if 0 <= stars < 2:
+    if 0 <= stars < 1:
         xp = 0
-        default = 240
+        default = 120
+    elif 1 <= stars < 2:
+        xp = 120
+        default = 120
     elif 2 <= stars < 3:
         xp = 240
     elif 3 <= stars < 4:
@@ -182,7 +185,6 @@ def stars_diff(mode, stars):
         xp = 815
     else:
         return Image.open(os.path.join(osufile, 'work', f'{mode}_expertplus.png')).convert('RGBA')
-    os.path.join(osufile, 'work', )
     # 取色
     x = (stars - math.floor(stars)) * default + xp
     color = Image.open(os.path.join(osufile, 'work', 'color.png')).load()
@@ -199,7 +201,7 @@ def stars_diff(mode, stars):
             data = sm.getpixel((i, z))
             if (data.count(255) == 4):
                 sm.putpixel((i, z), (255, 255, 255, 0))
-    return sm
+     return sm
 
 def get_modeimage(mode):
     if mode == 0:
