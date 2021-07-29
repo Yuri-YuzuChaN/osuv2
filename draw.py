@@ -201,7 +201,7 @@ def stars_diff(mode, stars):
             data = sm.getpixel((i, z))
             if (data.count(255) == 4):
                 sm.putpixel((i, z), (255, 255, 255, 0))
-     return sm
+    return sm
 
 def get_modeimage(mode):
     if mode == 0:
