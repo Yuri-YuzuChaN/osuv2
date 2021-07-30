@@ -15,16 +15,6 @@
 
 **注：`pillow`需要高于等于8.0.0版本**
 
-**注：`Maniera`依赖需自行修改文件第51行，添加`encoding='utf-8'`**
-
-```python
-{
-    with open(self.osupath, encoding='utf-8') as bmap:
-        textContent = bmap.read()
-        lines = textContent.splitlines()
-}
-```
-
 ## 如何申请token
 
 1. 打开osu个人设置页面：https://osu.ppy.sh/home/account/edit ，拉到最下面开放授权页面。
