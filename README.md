@@ -9,7 +9,7 @@
 1. 将该项目放在HoshinoBot插件目录 `modules` 下，或者clone本项目 `git clone https://github.com/Yuri-YuzuChaN/osuv2`
 2. 在`token.json`填入申请的`client_id`，`client_secret`，`access_token`，`refresh_token`，[如何申请token](#如何申请token)
 3. 修改`http.py`文件中的`FILEHTTP`字符串，将地址改为自己的服务器IP或域名，`:{PORT}/map`请勿删除
-4. pip以下依赖：`pillow`，`pyttanko`，`matplotlib`，`traceback`, `Maniera`，`filetype`
+4. pip以下依赖：`pillow`，`pyttanko`，`matplotlib`，`traceback`，`maniera`，`filetype`
 5. 在`config/__bot__.py`模块列表中添加`osuv2`
 6. 重启HoshinoBot
 
