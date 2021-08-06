@@ -90,7 +90,7 @@ def get_osufile(path, mapid, version):
                     return filepath
             ver = re.search(r'Version:(.+)', text)
             if ver:
-                mapver = result.group(1)
+                mapver = ver.group(1)
                 if version == mapver:
                     filepath = os.path.join(path, file)
                     return filepath
