@@ -1,19 +1,22 @@
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
+from PIL.Image import Image
 from datetime import datetime, timedelta
-import hoshino, os, asyncio, io, math
+from io import BytesIO, TextIOWrapper
+from typing import Union, Optional, List
+from hoshino import MessageSegment
+import os, math, traceback, base64, hoshino
 import matplotlib.pyplot as plt
 
-from .api import OsuApi, ChimuApi, SayoApi
+from .api import OsuApi, SayoApi
 from .file import *
 from .pp import *
 from .mods import *
-from .sql import osusql
-from .http import FILEHTTP
-from .data import ChumiInfo, SayoInfo, UserInfo, ScoreInfo, Beatmapset
+from .sql import *
+from .data import SayoInfo, UserInfo, ScoreInfo, Beatmapset
 
-esql = osusql()
-
-log = hoshino.new_logger('osuv2_draw')
+USER = UserSQL()
+osufile = os.path.join(os.path.dirname(__file__), 'osufile')
+logger = hoshino.new_logger('osuv2_draw')
 
 Torus_Regular = os.path.join(osufile, 'fonts', 'Torus Regular.otf')
 Torus_SemiBold = os.path.join(osufile, 'fonts', 'Torus SemiBold.otf')
@@ -24,9 +27,29 @@ Venera = os.path.join(osufile, 'fonts', 'Venera.otf')
 GM = {0 : 'osu', 1 : 'taiko', 2 : 'fruits', 3 : 'mania'}
 GMN = {'osu' : 'Std', 'taiko' : 'Taiko', 'fruits' : 'Ctb', 'mania' : 'Mania'}
 FGM = {'osu' : 0 , 'taiko' : 1 , 'fruits' : 2 , 'mania' : 3}
-sayo = [1, 2, 4, 8, 8, 16]
-chimu = [1, 3, 4, 0, -1, -2]
-        
+
+class Tobase:
+
+    def __init__(self, img: Union[str, Image], format: Optional[str] = 'PNG'):
+        '''`img : Union[str, Image] 图片`
+        `format : Optional[str] 图片类型，默认PNG`'''
+        self.img = img
+        self.format = format
+
+    def __b64str__(self, bytes: BytesIO) -> str:
+        if isinstance(bytes, BytesIO):
+            bytes = bytes.getvalue()
+        else:
+            bytes = bytes
+        base64_str = base64.b64encode(bytes).decode()
+        return 'base64://' + base64_str
+
+    def image(self) -> str:
+        '''`Image` 图片转 `base64` 编码'''
+        bytes = BytesIO()
+        self.img.save(bytes, self.format)
+        return self.__b64str__(bytes)
+
 class datatext:
     #L=X轴，T=Y轴，size=字体大小，fontpath=字体文件，
     def __init__(self, L, T, size, text, path, anchor = 'lt'):
@@ -68,7 +91,7 @@ def draw_fillet(img, radii):
     img.putalpha(alpha)
     return img
 
-def info_calc(n1, n2, rank=False, pp=False):
+def info_calc(n1: int, n2: int, rank: bool=False, pp: bool=False) -> List[str, int]:
     num = n1 - n2
     if num < 0:
         if rank:
@@ -86,9 +109,9 @@ def info_calc(n1, n2, rank=False, pp=False):
             op, value = '+', num
     else:
         op, value = '', 0
-    return op, value
+    return [op, value]
 
-def wedge_acc(acc):
+def wedge_acc(acc: float) -> BytesIO:
     size = [acc, 100-acc]
     insize = [60, 20, 7, 7, 5, 1]
     insizecolor = ['#ff5858', '#ea7948', '#d99d03', '#72c904', '#0096a2', '#be0089']
@@ -96,11 +119,11 @@ def wedge_acc(acc):
     patches, texts = ax.pie(size, radius=1.1, startangle=90, counterclock=False, pctdistance=0.9, wedgeprops=dict(width=0.27))
     ax.pie(insize, radius=0.8, colors=insizecolor, startangle=90, counterclock=False, pctdistance=0.9, wedgeprops=dict(width=0.05))
     patches[1].set_alpha(0)
-    img = io.BytesIO()
+    img = BytesIO()
     plt.savefig(img, transparent=True)
     return img
 
-def crop_bg(size, path):
+def crop_bg(size: str, path: Union[str, BytesIO]) -> Image:
     bg = Image.open(path).convert('RGBA')
     bg_w, bg_h = bg.size[0], bg.size[1]
     if size == 'BG':
@@ -151,9 +174,10 @@ def crop_bg(size, path):
         crop_img = sf.crop((x1, y1, x2, y2))
         return crop_img
     else:
-        return bg
+        sf = bg.resize((fix_w, fix_h))
+        return sf
 
-def stars_diff(mode, stars):
+def stars_diff(mode: str, stars: float) -> Image:
     if mode == 0:
         mode = 'std'
     elif mode == 1:
@@ -165,23 +189,23 @@ def stars_diff(mode, stars):
     else:
         mode = 'stars'
     default = 115
-    if 0 <= stars < 1:
+    if stars < 1:
         xp = 0
         default = 120
-    elif 1 <= stars < 2:
+    elif stars < 2:
         xp = 120
         default = 120
-    elif 2 <= stars < 3:
+    elif stars < 3:
         xp = 240
-    elif 3 <= stars < 4:
+    elif stars < 4:
         xp = 355
-    elif 4 <= stars < 5:
+    elif stars < 5:
         xp = 470
-    elif 5 <= stars < 6:
+    elif stars < 6:
         xp = 585
-    elif 6 <= stars < 7:
+    elif stars < 7:
         xp = 700
-    elif 7 <= stars < 8:
+    elif stars < 8:
         xp = 815
     else:
         return Image.open(os.path.join(osufile, 'work', f'{mode}_expertplus.png')).convert('RGBA')
@@ -203,7 +227,7 @@ def stars_diff(mode, stars):
                 sm.putpixel((i, z), (255, 255, 255, 0))
     return sm
 
-def get_modeimage(mode):
+def get_modeimage(mode: str) -> str:
     if mode == 0:
         img = 'pfm_std.png'
     elif mode == 1:
@@ -214,37 +238,34 @@ def get_modeimage(mode):
         img = 'pfm_mania.png'
     return os.path.join(osufile, img)
 
-def calc_songlen(len):
+def calc_songlen(len: int) -> str:
     map_len = list(divmod(int(len), 60))
     map_len[1] = map_len[1] if map_len[1] >= 10 else f'0{map_len[1]}'
     music_len = f'{map_len[0]}:{map_len[1]}'
     return music_len
 
-async def draw_info(id, mode):
+def osubytes(osufile: bytes) -> TextIOWrapper:
+    return TextIOWrapper(BytesIO(osufile), 'utf-8')
+
+async def draw_info(id: Union[int, str], mode: str, isint: bool) -> Union[str, MessageSegment]:
     try:
-        info_json = await OsuApi('info', id, mode)
+        info_json = await OsuApi('info', id, mode, isint=isint)
         if not info_json:
             return '未查询到该玩家'
         info = UserInfo(info_json)
         if info.play_count == 0:
             return f'此玩家尚未游玩过{GMN[mode]}模式'
         #对比
-        result = esql.get_all_newinfo(info.uid, FGM[mode])
-        if result:
-            for i in result:
-                n_crank = i[2]
-                n_grank = i[3]
-                n_pp = i[4]
-                n_acc = i[5]
-                n_pc = i[6]
-                n_count = i[7]
+        user = USER.get_info(info.uid, FGM[mode])
+        if user:
+            n_crank, n_grank, n_pp, n_acc, n_pc, n_count = user
         else:
             n_crank, n_grank, n_pp, n_acc, n_pc, n_count = info.crank, info.grank, info.pp, info.acc, info.play_count, info.count
         #新建
         im = Image.new('RGBA', (1000, 1322))
         #获取头图，头像，地区，状态，supporter
-        user_header = await get_projectimg(info.cover_url, 'header', info.uid)
-        user_icon = await get_projectimg(info.icon, 'icon', info.uid)
+        user_header = await get_projectimg(info.cover_url)
+        user_icon = await get_projectimg(info.icon)
         country = os.path.join(osufile, 'flags', f'{info.country_code}.png')
         supporter = os.path.join(osufile, 'work', 'suppoter.png')
         exp_l = os.path.join(osufile, 'work', 'left.png')
@@ -361,22 +382,22 @@ async def draw_info(id, mode):
         w_name = datatext(935, 1245, 40, t_time, Torus_Regular, anchor='rt')
         im = draw_text(im, w_name)
         #输出
-        info_outputimage = os.path.join(osufile, 'output', f'info_{info.uid}.png')
-        im.save(info_outputimage)
-        msg = f'[CQ:image,file=file:///{info_outputimage}]'
+        base = Tobase(im).image()
+        msg = MessageSegment.image(base)
     except Exception as e:
-        log.error(f'制图错误：{e}')
-        return f'Error: {type(e)}'
+        logger.error(f'制图错误：{traceback.print_exc()}')
+        msg = f'Error: {type(e)}'
     return msg
 
-async def draw_score(project: str, 
-                    id: str, 
-                    mode: str, 
-                    bp: int = 0, 
-                    mods: list = [], 
-                    mapid: int = 0):
+async def draw_score(project: str,
+                    id: str,
+                    mode: str,
+                    best: int = 0,
+                    mods: list = [],
+                    mapid: int = 0,
+                    isint: bool = False) -> Union[str, MessageSegment]:
     try:
-        scoreJson = await OsuApi(project, id, mode, mapid)
+        scoreJson = await OsuApi(project, id, mode, mapid, isint=isint)
         if not scoreJson:
             return '未查询到游玩记录'
         elif isinstance(scoreJson, str):
@@ -385,44 +406,47 @@ async def draw_score(project: str,
         if project == 'recent':
             info.RecentScore()
         elif project == 'bp':
-            info.BPScore(bp, mods)
+            info.BPScore(best, mods)
             if mods:
                 if not info.modslist:
-                    return '未在bp上查询到开启该mod的成绩'
+                    return f'未找到开启 {"|".join(mods)} Mods的第{best}个成绩'
         elif project == 'score':
-            info.MapScore()
+            info.MapScore(mods)
         else:
             raise 'Project Error'
 
         mapJson = await OsuApi('map', mapid=info.mapid)
         mapinfo = Beatmapset(mapJson)
         if project == 'bp' or project == 'recent':
-            header = await OsuApi('info', id)
+            header = await OsuApi('info', id, isint=isint)
             info.headericon = header['cover_url']
             info.grank = '--'
         #下载地图
         dirpath = await MapDownload(info.setid)
-        #获取文件
-        version_osu = get_osufile(dirpath, info.mapid, mapinfo.version)
+        osu = await OsuFileDl(info.mapid)
+        # await OsuFileDl(info.mapid)
         #pp
-        setmods = modsnum(info.mods) if info.mods else 0
+        calc = PPCalc(info.mode, info.mapid)
         if info.mode == 0:
-            _pp, aim_pp, speed_pp, acc_pp = calc_pp(version_osu, setmods, info.maxcb, info.c50, info.c100, info.c300, info.cmiss)
+            _pp, ifpp, sspp, aim_pp, speed_pp, acc_pp, stars, ar, od = await calc.osu_pp(info.acc, info.maxcb, info.c100, info.c50, info.cmiss, info.mods)
             pp = int(info.pp) if info.pp != -1 else _pp
-            ifpp = calc_if(version_osu, setmods, info.c50, info.c100, mapinfo.maxcb)
+        elif info.mode == 1:
+            _pp, ifpp, stars = await calc.taiko_pp(info.acc, info.maxcb, info.c100, info.cmiss, info.mods)
+            pp = int(info.pp) if info.pp != -1 else _pp
+        elif info.mode == 2:
+            _pp, ifpp, stars = await calc.catch_pp(info.acc, info.maxcb, info.cmiss, info.mods)
+            pp = int(info.pp) if info.pp != -1 else _pp
         elif info.mode == 3:
-            _pp = calc_mania_pp(version_osu, setmods, info.score)
+            _pp, ifpp, stars = await calc.mania_pp(info.score, info.mods)
             pp = int(info.pp) if info.pp != -1 else _pp
-            ifpp = calc_mania_pp(version_osu, setmods, 1000000)
-        elif project == 'recent' and info.mode != 0:
-            pp, aim_pp, speed_pp, acc_pp = '--', '--', '--', '--'
-        else:
-            pp, aim_pp, speed_pp, acc_pp = int(info.pp), '--', '--', '--'
         #新建图片
         im = Image.new('RGBA', (1500, 800))
         #获取cover并裁剪，高斯，降低亮度
-        cover = get_picmusic('pic', version_osu)
-        cover_path = os.path.join(dirpath, cover)
+        cover = re_map(osubytes(osu))
+        if cover == 'mapbg.png':
+            cover_path = os.path.join(osufile, 'work', cover)
+        else:
+            cover_path = os.path.join(dirpath, cover)
         cover_crop = crop_bg('BG', cover_path)
         cover_gb = cover_crop.filter(ImageFilter.GaussianBlur(1))
         cover_img = ImageEnhance.Brightness(cover_gb).enhance(2 / 4.0)
@@ -432,24 +456,23 @@ async def draw_score(project: str,
         recent_bg = Image.open(BG).convert('RGBA')
         im.alpha_composite(recent_bg)
         #模式
-        mode_bg = stars_diff(mapinfo.mode, mapinfo.diff)
+        mode_bg = stars_diff(info.mode, stars)
         mode_img = mode_bg.resize((30, 30))
         im.alpha_composite(mode_img, (75, 154))
         #难度星星
-        stars_bg = stars_diff('stars', mapinfo.diff)
+        stars_bg = stars_diff('stars', stars)
         stars_img = stars_bg.resize((23, 23))
         im.alpha_composite(stars_img, (134, 158))
         #mods
+        if 'HD' in info.mods or 'FL' in info.mods:
+            ranking = ['XH', 'SH', 'A', 'B', 'C', 'D', 'F']
+        else:
+            ranking = ['X', 'S', 'A', 'B', 'C', 'D', 'F']
         if info.mods:
             for mods_num, s_mods in enumerate(info.mods):
                 mods_bg = os.path.join(osufile, 'mods', f'{s_mods}.png')
                 mods_img = Image.open(mods_bg).convert('RGBA')
                 im.alpha_composite(mods_img, (500 + 50 * mods_num , 240))
-            ranking = ['XH', 'SH', 'A', 'B', 'C', 'D', 'F']
-            if info.rank == 'X' or info.rank == 'S':
-                info.rank = info.rank + 'H'
-        else:
-            ranking = ['X', 'S', 'A', 'B', 'C', 'D', 'F']
         #成绩S-F
         rank_ok = False
         for rank_num, i in enumerate(ranking):
@@ -465,18 +488,14 @@ async def draw_score(project: str,
             else:
                 rank_bg = Image.open(rank_img).convert('RGBA').resize((48, 24))
                 rank_ok = True
-                if info.mods:
-                    if info.rank == 'XH' or info.rank == 'SH':
-                        info.rank = info.rank[:-1]
             im.alpha_composite(rank_bg, (75, 243 + 39 * rank_num))
-            # rank_num += 26
         #成绩+acc
         score_acc = wedge_acc(info.acc * 100)
         score_acc_bg = Image.open(score_acc).convert('RGBA').resize((576, 432))
         im.alpha_composite(score_acc_bg, (15, 153))
         #获取头图，头像，地区，状态，support
-        user_headericon = await get_projectimg(info.headericon, 'header', info.uid)
-        user_icon = await get_projectimg(info.icon_url, 'icon', info.uid)
+        user_headericon = await get_projectimg(info.headericon)
+        user_icon = await get_projectimg(info.icon_url)
         #头图
         headericon_crop = crop_bg('H', user_headericon)
         headericon_gb = headericon_crop.filter(ImageFilter.GaussianBlur(1))
@@ -501,7 +520,11 @@ async def draw_score(project: str,
             supporter_bg = Image.open(supporter).convert('RGBA').resize((40, 40))
             im.alpha_composite(supporter_bg, (267, 606))
         #cs, ar, od, hp, stardiff
-        for num, i in enumerate(mapinfo.mapdiff):
+        if info.mode == 0:
+            mapdiff = [mapinfo.cs, mapinfo.hp, od, ar, stars]
+        else:
+            mapdiff = [mapinfo.cs, mapinfo.hp, mapinfo.od, mapinfo.ar, stars]
+        for num, i in enumerate(mapdiff):
             color = (255, 255, 255, 255)
             if num == 4:
                 color = (255, 204, 34, 255)
@@ -525,7 +548,7 @@ async def draw_score(project: str,
         w_title = datatext(75, 118, 30, f'{mapinfo.title} | by {mapinfo.artist}', Meiryo_SemiBold, anchor='lm')
         im = draw_text(im, w_title)
         #星级
-        w_diff = datatext(162, 169, 18, mapinfo.diff, Torus_SemiBold, anchor='lm')
+        w_diff = datatext(162, 169, 18, stars, Torus_SemiBold, anchor='lm')
         im = draw_text(im, w_diff)
         #谱面版本，mapper
         w_version = datatext(225, 169, 22, f'{mapinfo.version} | mapper by {mapinfo.mapper}', Torus_SemiBold, anchor='lm')
@@ -559,9 +582,19 @@ async def draw_score(project: str,
         im = draw_text(im, w_line)
         #acc,cb,pp,300,100,50,miss
         if info.mode == 0:
-            w_acc = datatext(1050, 625, 30, f'{info.acc * 100:.2f}%', Torus_Regular, anchor='mm')
-            w_maxcb = datatext(1202, 625, 30, f'{info.maxcb:,}/{mapinfo.maxcb}', Torus_Regular, anchor='mm')
-            w_pp = datatext(1352, 625, 30, f'{pp}/{ifpp}', Torus_Regular, anchor='mm')
+            w_sspp = datatext(650, 625, 30, sspp, Torus_Regular, anchor='mm')
+            im = draw_text(im, w_sspp)
+            w_ifpp = datatext(770, 625, 30, ifpp, Torus_Regular, anchor='mm')
+            im = draw_text(im, w_ifpp)
+            w_pp = datatext(890, 625, 30, pp, Torus_Regular, anchor='mm')
+            w_aimpp = datatext(650, 720, 30, aim_pp, Torus_Regular, anchor='mm')
+            im = draw_text(im, w_aimpp)
+            w_spdpp = datatext(770, 720, 30, speed_pp, Torus_Regular, anchor='mm')
+            im = draw_text(im, w_spdpp)
+            w_accpp = datatext(890, 720, 30, acc_pp, Torus_Regular, anchor='mm')
+            im = draw_text(im, w_accpp)
+            w_acc = datatext(1087, 625, 30, f'{info.acc * 100:.2f}%', Torus_Regular, anchor='mm')
+            w_maxcb = datatext(1315, 625, 30, f'{info.maxcb:,}/{mapinfo.maxcb:,}', Torus_Regular, anchor='mm')
             w_300 = datatext(1030, 720, 30, info.c300, Torus_Regular, anchor='mm')
             w_100 = datatext(1144, 720, 30, info.c100, Torus_Regular, anchor='mm')
             w_50 = datatext(1258, 720, 30, info.c50, Torus_Regular, anchor='mm')
@@ -569,15 +602,15 @@ async def draw_score(project: str,
             w_miss = datatext(1372, 720, 30, info.cmiss, Torus_Regular, anchor='mm')
         elif info.mode == 1:
             w_acc = datatext(1050, 625, 30, f'{info.acc * 100:.2f}%', Torus_Regular, anchor='mm')
-            w_maxcb = datatext(1202, 625, 30, f'{info.maxcb:,}/{mapinfo.maxcb}', Torus_Regular, anchor='mm')
-            w_pp = datatext(1352, 625, 30, pp, Torus_Regular, anchor='mm')
+            w_maxcb = datatext(1202, 625, 30, f'{info.maxcb:,}/{mapinfo.maxcb:,}', Torus_Regular, anchor='mm')
+            w_pp = datatext(1352, 625, 30, f'{pp}/{ifpp}', Torus_Regular, anchor='mm')
             w_300 = datatext(1050, 720, 30, info.c300, Torus_Regular, anchor='mm')
             w_100 = datatext(1202, 720, 30, info.c100, Torus_Regular, anchor='mm')
             w_miss = datatext(1352, 720, 30, info.cmiss, Torus_Regular, anchor='mm')
         elif info.mode == 2:
             w_acc = datatext(1016, 625, 30, f'{info.acc * 100:.2f}%', Torus_Regular, anchor='mm')
-            w_maxcb = datatext(1180, 625, 30, f'{info.maxcb:,}/{mapinfo.maxcb}', Torus_Regular, anchor='mm')
-            w_pp = datatext(1344, 625, 30, pp, Torus_Regular, anchor='mm')
+            w_maxcb = datatext(1180, 625, 30, f'{info.maxcb:,}/{mapinfo.maxcb:,}', Torus_Regular, anchor='mm')
+            w_pp = datatext(1344, 625, 30, f'{pp}/{ifpp}', Torus_Regular, anchor='mm')
             w_300 = datatext(995, 720, 30, info.c300, Torus_Regular, anchor='mm')
             w_100 = datatext(1118, 720, 30, info.c100, Torus_Regular, anchor='mm')
             w_katu = datatext(1242, 720, 30, info.ckatu, Torus_Regular, anchor='mm')
@@ -603,28 +636,23 @@ async def draw_score(project: str,
         im = draw_text(im, w_100)
         im = draw_text(im, w_miss)
 
-        score_outputimage = os.path.join(osufile, 'output', f'recent_{info.uid}.png')
-        im.save(score_outputimage)
-        msg = f'[CQ:image,file=file:///{score_outputimage}]'
+        base = Tobase(im).image()
+        msg = MessageSegment.image(base)
     except Exception as e:
-        log.error(f'制图错误：{e}')
-        return f'Error: {type(e)}'
+        logger.error(f'制图错误：{traceback.print_exc()}')
+        msg = f'Error: {type(e)}'
     return msg
 
-async def best_pfm(id, mode: str, min: int, max: int, mods: list = []):  
+async def best_pfm(id: Union[str, int], mode: str, min: int, max: int, mods: list = [], isint: bool = False) -> Union[str, MessageSegment]:  
     try:
-        BPInfo = await OsuApi('bp', id, mode)
+        BPInfo = await OsuApi('bp', id, mode, isint=isint)
         if isinstance(BPInfo, str):
             return BPInfo
         info = ScoreInfo(BPInfo)
         info.BestBPScore(min, max, mods)
-        if mods:
-            if not info.modslist:
-                return '没有在bp上查询到开启该mod的成绩'
-            elif not info.modsbool:
-                return f'在bp上查询到开启该mod成绩数量为{len(info.modslist)}个，少于{min}个'
+        if mods and not info.modslist:
+            return f'未找到开启 {"|".join(mods)} Mods的成绩'
         user = BPInfo[0]['user']['username']
-        uid = BPInfo[0]['user_id']
         bplist_len = len(info.bpList)
         im = Image.new('RGBA', (1500, 180 + 82 * (bplist_len - 1)), (31, 41, 46, 255))
         bp_bg = os.path.join(osufile, 'Best Performance.png')
@@ -638,12 +666,12 @@ async def best_pfm(id, mode: str, min: int, max: int, mods: list = []):
             h_num = 82 * num
             info.BestScore(bp)
             #mods
-            if mods:
-                for mods_num, s_mods in enumerate(mods):
+            if info.mods:
+                for mods_num, s_mods in enumerate(info.mods):
                     mods_bg = os.path.join(osufile, 'mods', f'{s_mods}.png')
                     mods_img = Image.open(mods_bg).convert('RGBA')
                     im.alpha_composite(mods_img, (1000 + 50 * mods_num, 126 + h_num))
-                if info.rank == 'X' or info.rank == 'S':
+                if (info.rank == 'X' or info.rank == 'S') and ('HD' in info.mods or 'FL' in info.mods):
                     info.rank += 'H'
             #rank
             rank_img = os.path.join(osufile, 'ranking', f'ranking-{info.rank}.png')
@@ -672,15 +700,14 @@ async def best_pfm(id, mode: str, min: int, max: int, mods: list = []):
             div = Image.new('RGBA', (1450, 2), (46, 53, 56, 255)).convert('RGBA')
             im.alpha_composite(div, (25, 180 + h_num))
 
-        bp_outputimage = os.path.join(osufile, 'output', f'pfm_{uid}.png')
-        im.save(bp_outputimage)
-        msg = f'[CQ:image,file=file:///{bp_outputimage}]'
+        base = Tobase(im).image()
+        msg = MessageSegment.image(base)
     except Exception as e:
-        log.error(f'制图错误：{e}')
-        return f'Error: {type(e)}'
+        logger.error(f'制图错误：{traceback.print_exc()}')
+        msg = f'Error: {type(e)}'
     return msg
 
-async def map_info(mapid, mods): 
+async def map_info(mapid: int, mods: list) -> Union[str, MessageSegment]: 
     try:
         info = await OsuApi('map', mapid=mapid)
         if not info:
@@ -691,33 +718,22 @@ async def map_info(mapid, mods):
         diffinfo = calc_songlen(mapinfo.total_len), mapinfo.bpm, mapinfo.c_circles, mapinfo.c_sliders
         #获取地图
         dirpath = await MapDownload(mapinfo.setid)
-        version_osu = get_osufile(dirpath, mapid, mapinfo.version)
-        #获取音乐
-        music = get_picmusic('music', version_osu)
-        music_file = os.path.join(dirpath, music)
-        if not os.path.isfile(music_file):
-            shutil.rmtree(dirpath)
-            await MapDownload(mapinfo.setid)
-        music_url = f'{FILEHTTP}/{mapinfo.setid}/{music}'
+        osu = await OsuFileDl(mapid)
         #pp
         if mapinfo.mode == 0:
-            pp = calc_acc_pp(version_osu, mods)[5]
-        elif mapinfo.mode == 3:
-            pp = calc_mania_pp(version_osu, mods, 1000000)
+            pp, stars, ar, od = await PPCalc(mapinfo.mode, mapid).if_pp(mods=mods)
         else:
-            pp = 'Std & Mania Only'
+            pp, stars = await PPCalc(mapinfo.mode, mapid).if_pp(mods=mods)
         #计算时间
         if mapinfo.ranked_date:
             old_time = datetime.strptime(mapinfo.ranked_date.replace('+00:00', ''), '%Y-%m-%dT%H:%M:%S')
             new_time = (old_time + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
         else:
-            new_time = 'No Ranked'
+            new_time = '??-??-?? ??:??:??'
         #BG做地图
         im = Image.new('RGBA', (1200, 600))
-        cover = get_picmusic('pic', version_osu)
-        cover_url = f'{FILEHTTP}/{mapinfo.setid}/{cover}'
-        cover_path = os.path.join(dirpath, cover)
-        cover_crop = crop_bg('MB', cover_path)
+        cover = re_map(osubytes(osu))
+        cover_crop = crop_bg('MB', os.path.join(dirpath, cover))
         cover_img = ImageEnhance.Brightness(cover_crop).enhance(2 / 4.0)
         im.alpha_composite(cover_img)
         #获取地图info
@@ -725,11 +741,15 @@ async def map_info(mapid, mods):
         mapbg = Image.open(map_bg).convert('RGBA')
         im.alpha_composite(mapbg)
         #模式
-        mode_bg = stars_diff(mapinfo.mode, mapinfo.diff)
+        mode_bg = stars_diff(mapinfo.mode, stars)
         mode_img = mode_bg.resize((50, 50))
         im.alpha_composite(mode_img, (50, 100))
         #cs - diff
-        for num, i in enumerate(mapinfo.mapdiff):
+        if mapinfo.mode == 0:
+            mapdiff = [mapinfo.cs, mapinfo.hp, od, ar, stars]
+        else:
+            mapdiff = [mapinfo.cs, mapinfo.hp, mapinfo.od, mapinfo.ar, stars]
+        for num, i in enumerate(mapdiff):
             color = (255, 255, 255, 255)
             if num == 4:
                 color = (255, 204, 34, 255)
@@ -782,136 +802,15 @@ async def map_info(mapid, mods):
         #pp
         w_pp = datatext(320, 570, 20, f'SS PP: {pp}', Torus_SemiBold, anchor='lm')
         im = draw_text(im, w_pp)
-        #音乐
-        musicinfo = f'[CQ:music,type=custom,url=https://osu.ppy.sh/b/{mapid},audio={music_url},title={mapinfo.artist} - {mapinfo.title},content=点击可跳转该地图链接查看详情,image={cover_url}]'
         #输出
-        map_osuputimage = os.path.join(osufile, 'output', 'info_map.png')
-        im.save(map_osuputimage)
-        msg = f'[CQ:image,file=file:///{map_osuputimage}]'
-        return musicinfo, msg
+        base = Tobase(im).image()
+        msg = MessageSegment.image(base)
     except Exception as e:
-        log.error(f'制图错误：{e}')
-        return f'Error:{type(e)}'
-
-async def search_map(project, mode, status, keyword, op=False):
-    try:
-        if not op:
-            mode, status = sayo[mode], sayo[status]
-            sayoinfo = await SayoApi(project, mode, status, keyword)
-            if sayoinfo['status'] == -1:
-                return '未查询到地图'
-            elif isinstance(sayoinfo, str):
-                return sayoinfo          
-            data = sayoinfo['data']
-        else:
-            chumiinfo = await ChimuApi(mode, chimu[status], keyword)
-            if not chumiinfo:
-                return '未查询到地图'
-            elif isinstance(chumiinfo, str):
-                return chumiinfo
-            data = chumiinfo
-        # 并发
-        info = []
-        tasks = []
-        async def sayo_mapinfo(setid):
-            try:
-                sayoinfo = await SayoApi('mapinfo', setid=setid)
-                info.append(sayoinfo)
-            except Exception as e:
-                log.error(e)
-                raise '请求过程中出错'
-        # loop
-        loop = asyncio.get_event_loop()
-        for temp_sid in data:
-            if not op:
-                task = loop.create_task(sayo_mapinfo(temp_sid['sid']))
-            else:
-                task = loop.create_task(sayo_mapinfo(temp_sid['SetID']))
-            tasks.append(task)
-            await asyncio.sleep(0.1)
-        
-        await asyncio.sleep(1)
-        for _ in tasks:
-            _.cancel()
-        # end
-        #根据结果定高度
-        num = len(data)
-        im_h = num * 303 - 3 if num != 1 else num * 300
-        im = Image.new('RGBA', (1200, im_h))
-        for infonum, map in enumerate(data):
-            #每个结果增加高度
-            pnum = 303 * infonum
-            if not op:
-                songinfo = SayoInfo(map)
-            else:
-                songinfo = ChumiInfo(map)
-            #查图
-            songinfo.map(info[infonum]['data'])
-            #获取背景
-            coverurl = f'https://assets.ppy.sh/beatmaps/{songinfo.setid}/covers/cover@2x.jpg'
-            cover = await get_projectimg(coverurl)
-            #裁切
-            cover_crop = crop_bg('MP', cover)
-            cover_gb = cover_crop.filter(ImageFilter.GaussianBlur(1))
-            cover_img = ImageEnhance.Brightness(cover_gb).enhance(2 / 4.0)
-            im.alpha_composite(cover_img, (0, pnum))
-            #mode图片
-            gmap = sorted(songinfo.gmap, key=lambda k: k['star'], reverse=False)
-            for num, cmap in enumerate(gmap):
-                if num < 10:
-                    songinfo.mapinfo(cmap)
-                    mode_bg = stars_diff(songinfo.mode, songinfo.star)
-                    mode_img = mode_bg.resize((50, 50))
-                    im.alpha_composite(mode_img, (25 + 60 * num, 215  + pnum))
-                    w_diff = datatext(50 + 60 * num, 280 + pnum, 20, songinfo.star, Torus_SemiBold, anchor='mm')
-                    im = draw_text(im, w_diff)
-                else:
-                    plusnum = f'+{num-9}'
-            if num >= 10:
-                w_mode_num = datatext(650, 250 + pnum, 25, plusnum, Torus_SemiBold)
-                im = draw_text(im, w_mode_num)
-            #曲名
-            w_title = datatext(25, 40 + pnum, 40, songinfo.title, Meiryo_SemiBold)
-            im = draw_text(im, w_title)
-            #曲师
-            w_artist = datatext(25, 75 + pnum, 20, songinfo.artist, Meiryo_SemiBold)
-            im = draw_text(im, w_artist)
-            #mapper
-            w_mapper = datatext(25, 110 + pnum, 20, f'mapper by {songinfo.mapper}', Torus_SemiBold)
-            im = draw_text(im, w_mapper)
-            #rank时间
-            if songinfo.apptime == -1:
-                songinfo.apptime = 'No Ranked'
-            else:
-                datearray = datetime.utcfromtimestamp(songinfo.apptime)
-                songinfo.apptime = (datearray + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
-            w_apptime = datatext(25, 145 + pnum, 20, f'Approved Time: {songinfo.apptime}', Torus_SemiBold)
-            im = draw_text(im, w_apptime)
-            #来源
-            w_source = datatext(25, 180 + pnum, 20, f'Source: {songinfo.source}', Meiryo_SemiBold)
-            im = draw_text(im, w_source)
-            #bpm
-            w_bpm = datatext(1150, 110 + pnum, 20, f'BPM: {songinfo.bpm}', Torus_SemiBold, anchor='rt')
-            im = draw_text(im, w_bpm)
-            #曲长
-            music_len = calc_songlen(songinfo.songlen)
-            w_music_len = datatext(1150, 145 + pnum, 20, f'lenght: {music_len}', Torus_SemiBold, anchor='rt')
-            im = draw_text(im, w_music_len)
-            #setid
-            w_setid = datatext(1150, 20 + pnum, 20, f'Setid: {songinfo.setid}', Torus_SemiBold, anchor='rt')
-            im = draw_text(im, w_setid)
-            ims = Image.new('RGBA', (1200, 3), (255, 255, 255, 255))
-            im.alpha_composite(ims, (0, 303 * (infonum + 1) - 3))
-
-        outputimage_path = os.path.join(osufile, 'output', 'search.png')
-        im.save(outputimage_path)
-        msg = f'[CQ:image,file=file:///{outputimage_path}]' 
-    except Exception as e:
-        log.error(f'制图错误：{e}')
-        return f'Error: {type(e)}'
+        logger.error(f'制图错误：{traceback.print_exc()}')
+        msg = f'Error:{type(e)}'
     return msg
 
-async def bmap_info(mapid, op=False):
+async def bmap_info(mapid: int, op: bool=False) -> Union[str, MessageSegment]:
     if op:
         info = await OsuApi('map', mapid=mapid)
         if not info:
@@ -919,7 +818,7 @@ async def bmap_info(mapid, op=False):
         elif isinstance(info, str):
             return info
         mapid = info['beatmapset_id']
-    info = await SayoApi('mapinfo', setid=mapid)
+    info = await SayoApi(mapid)
     if info['status'] == -1:
         return '未查询到地图'
     elif isinstance(info, str):
@@ -941,17 +840,17 @@ async def bmap_info(mapid, op=False):
         cover_img = ImageEnhance.Brightness(cover_gb).enhance(2 / 4.0)
         im.alpha_composite(cover_img, (0, 0))
         #曲名
-        w_title = datatext(25, 40, 40, songinfo.title, Meiryo_SemiBold)
+        w_title = datatext(25, 40, 38, songinfo.title, Meiryo_SemiBold)
         im = draw_text(im, w_title)
         #曲师
-        w_artist = datatext(25, 75, 20, songinfo.artist, Meiryo_SemiBold)
+        w_artist = datatext(25, 75, 20, f'by {songinfo.artist}', Meiryo_SemiBold)
         im = draw_text(im, w_artist)
         #mapper
         w_mapper = datatext(25, 110, 20, f'mapper by {songinfo.mapper}', Torus_SemiBold)
         im = draw_text(im, w_mapper)
         #rank时间
         if songinfo.apptime == -1:
-            songinfo.apptime = 'No Ranked'
+            songinfo.apptime = '??-??-?? ??:??:??'
         else:
             datearray = datetime.utcfromtimestamp(songinfo.apptime)
             songinfo.apptime = (datearray + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
@@ -1019,15 +918,15 @@ async def bmap_info(mapid, op=False):
         if num >= 20:
             w_plusnum = datatext(600, 350 + 102 * 20, 50, plusnum, Torus_SemiBold, anchor='mm')
             im = draw_text(im, w_plusnum)
-        outputimage_path = os.path.join(osufile, 'output', 'bmapinfo.png')
-        im.save(outputimage_path)
-        msg = f'[CQ:image,file=file:///{outputimage_path}]'
+
+        base = Tobase(im).image()
+        msg = MessageSegment.image(base)
     except Exception as e:
-        log.error(f'制图错误：{e}')
-        return f'Error: {type(e)}'
+        logger.error(f'制图错误：{traceback.print_exc()}')
+        msg = f'Error: {type(e)}'
     return msg
 
-async def bindinfo(project, id, qid):
+async def bindinfo(project: str, id: str, qid: int) -> str:
     info = await OsuApi(project, id, GM[0])
     if not info:
         return '未查询到该玩家'
@@ -1035,56 +934,40 @@ async def bindinfo(project, id, qid):
         return info
     uid = info['id']
     name = info['username']
-    esql.insert_user(qid, uid, name)
+    USER.insert_user(qid, uid, name)
     await user(uid)
     msg = f'用户 {name} 已成功绑定QQ {qid}'
     return msg
 
-async def update_icon(project, id, mode):
-    info = await OsuApi(project, id, mode)
-    if not info:
-        return '未查询到该玩家'
-    elif isinstance(info, str):
-        return info
-    icon = info['avatar_url']
-    header = info['cover_url']
-    icon_t = await get_projectimg(icon, 'icon', id, True)
-    header_t = await get_projectimg(header, 'header', id, True)
-    if icon_t and header_t:
-        return '头像和头图更新完毕'
-    else:
-        return '头像和头图更新失败'
-
-async def get_map_bg(mapid):
+async def get_map_bg(mapid: Union[str, int]) -> MessageSegment:
     info = await OsuApi('map', mapid=mapid)
     if not info:
         return '未查询到该地图'
     elif isinstance(info, str):
         return info
-    version = info['version']
-    setid = info['beatmapset_id']
+    setid: int = info['beatmapset_id']
     dirpath = await MapDownload(setid)
-    version_osu = get_osufile(dirpath, mapid, version)
-    path = get_picmusic('pic', version_osu)
-    msg = f'[CQ:image,file=file:///{os.path.join(dirpath, path)}]'
+    osu = await OsuFileDl(mapid)
+    path = re_map(osubytes(osu))
+    msg = MessageSegment.image(f'file:///{os.path.join(dirpath, path)}')
     return msg
 
-async def user(id, update=False):
+async def user(id: int, update: bool=False):
     for mode in range(0, 4):
         if not update:
-            new = esql.get_all_newinfo(id, mode)
+            new = USER.get_info(id, mode)
             if new:
                 continue
-        userinfo = await OsuApi('update', id, GM[mode])
+        userinfo = await OsuApi('update', id, GM[mode], isint=True)
         if userinfo['statistics']['play_count'] != 0:
             info = UserInfo(userinfo)
             if update:
-                esql.update_all_info(id, info.crank, info.grank, info.pp, round(info.acc, 2), info.play_count, info.play_hits, mode)
+                USER.update_info(id, info.crank, info.grank, info.pp, round(info.acc, 2), info.play_count, info.play_hits, mode)
             else:
-                esql.insert_all_info(id, info.crank, info.grank, info.pp, round(info.acc, 2), info.play_count, info.play_hits, mode)
+                USER.insert_info(id, info.crank, info.grank, info.pp, round(info.acc, 2), info.play_count, info.play_hits, mode)
         else:
             if update:
-                esql.update_all_info(id, 0, 0, 0, 0, 0, 0, mode)
+                USER.update_info(id, 0, 0, 0, 0, 0, 0, mode)
             else:
-                esql.insert_all_info(id, 0, 0, 0, 0, 0, 0, mode)
-        log.info(f'玩家:[{userinfo["username"]}] {GM[mode]}模式 个人信息更新完毕')
+                USER.insert_info(id, 0, 0, 0, 0, 0, 0, mode)
+        logger.info(f'玩家:[{userinfo["username"]}] {GM[mode]}模式 个人信息更新完毕')
