@@ -1,25 +1,66 @@
+from typing import Union
 import aiohttp, json, os, traceback, hoshino
 
 api = 'https://osu.ppy.sh/api/v2'
 sayoapi = 'https://api.sayobot.cn'
-chimuapi = 'https://api.chimu.moe/cheesegull/search'
-token_json = os.path.join(os.path.dirname(__file__), 'token.json')
+ppcalcapi: str = 'http://yuzuai.cn:6321'
 
-def osutoken():
-    with open(token_json, encoding='utf-8') as f:
-        i = json.load(f)
-        client_id = i["client_id"]
-        client_secret = i['client_secret']
-        access_token = i['access_token']
-        refresh_token = i['refresh_token']
-    return access_token, refresh_token, client_id, client_secret
+logger = hoshino.new_logger('osuv2_api')
 
-async def OsuApi(project, id=0, mode='osu', mapid=0):
+class osutoken:
+
+    def __init__(self) -> None:
+        self.load()
+
+    def load(self):
+        self.token_json = os.path.join(os.path.dirname(__file__), 'token.json')
+        self.token: dict = json.load(open(self.token_json, 'r', encoding='utf-8'))
+
+    async def update_token(self) -> str:
+        url = 'https://osu.ppy.sh/oauth/token'
+        data = {
+            'grant_type' : 'refresh_token',
+            'client_id' : self.token['client_id'],
+            'client_secret' : self.token['client_secret'],
+            'refresh_token' : self.token['refresh_token']
+        }
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, data=data) as req:
+                    if req.status != 200:
+                        logger.error(f'OAuth Certification Error: {req.status}')
+                        return f'OAuth 认证失败 {req.status}'
+                    newtoken = await req.json()
+        except Exception as e:
+            logger.error(f'OAuth Certification Error: {e}')
+            return f'OAuth 认证失败: {type(e)}'
+
+        self.token['access_token'] = newtoken['access_token']
+        self.token['refresh_token'] = newtoken['refresh_token']
+
+        try:
+            with open(self.token_json, 'w', encoding='utf-8') as f:
+                json.dump(self.token, f, ensure_ascii=False, indent=4)
+        except Exception as e:
+            traceback.print_exc()
+            logger.error(e)
+        logger.info('OAuth Certification Successful')
+        return 'OAuth 认证令牌更新完毕'
+
+    @property
+    def accesstoken(self) -> str:
+        '''返回 `access_token` '''
+        return self.token['access_token']
+
+token = osutoken()
+
+async def OsuApi(project: str, id: Union[int, str] = 0, mode: str = 'osu', mapid: int = 0, isint: bool = False) -> Union[dict, bool]:
     try:
         if id:
-            url = f'{api}/users/{id}'
-            info = await ApiInfo(project, url)
-            id = info['id']
+            if not isint:
+                url = f'{api}/users/{id}'
+                info = await ApiInfo(project, url)
+                id = info['id']
         if project == 'info' or project == 'bind' or project == 'update':
             url = f'{api}/users/{id}/{mode}'
         elif project == 'recent':
@@ -39,104 +80,63 @@ async def OsuApi(project, id=0, mode='osu', mapid=0):
     except:
         return False
 
-async def SayoApi(project, mode=1, status=1, keyword=None, setid=0):
+async def SayoApi(setid: int) -> Union[dict, bool]:
     try:
-        if project == 'search':
-            data = {
-                'class' : status,
-                'cmd' : 'beatmaplist',
-                'keyword' : keyword,
-                'limit' : 10,
-                'mode' : mode,
-                'offset' : 0,
-                'type' : 'search'
-            }
-            url = f'{sayoapi}/?post'
-            data = json.dumps(data)
-        elif project == 'mapinfo':
-            url = f'{sayoapi}/v2/beatmapinfo?0={setid}'
-            data = None
-        else:
-            raise 'Project Error'
-        return await ApiInfo(project, url, data)
+        url = f'{sayoapi}/v2/beatmapinfo?0={setid}'
+        return await ApiInfo('mapinfo', url)
     except:
         return False
 
-async def ChimuApi(mode, status, keyword):
+async def PPApi(mode: int, mapid: int, acc: float=100, combo: int=0, good: int=0, bad: int=0,
+                miss: int=0, score: int=1000000, mods: list=[]) -> Union[dict, type[Exception]]:
     try:
-        url = f'{chimuapi}?query={keyword}&amount=10&status={status}&mode={mode}'
+        mods_t = ''
+        if mods:
+            mods_t = '+'.join(mods) 
+        if mode == 0:
+            url = f'{ppcalcapi}/osu?o={mapid}&a={acc}&g={good}&b={bad}&m={miss}&mods={mods_t}'
+        elif mode == 1:
+            url = f'{ppcalcapi}/taiko?o={mapid}&a={acc}&g={good}&m={miss}&mods={mods_t}'
+        elif mode == 2:
+            url = f'{ppcalcapi}/catch?o={mapid}&a={acc}&m={miss}&mods={mods_t}'
+        elif mode == 3:
+            url = f'{ppcalcapi}/mania?o={mapid}&s={score}&mods={mods_t}'
+        else:
+            raise 'mode Error'
+        if combo != 0:
+            url += f'&c={combo}'
+        return await ApiInfo('PPCalc', url)
+    except Exception as e:
+        traceback.print_exc()
+        logger.error(e)
+        return type(e)
+
+async def ApiInfo(project: str, url: str) -> Union[dict, str, type[Exception]]:
+    try:
+        if project == 'mapinfo' or project == 'PPCalc':
+            headers = {'user-agent' : 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36'}
+        else:
+            headers = {'Authorization' : f'Bearer {token.accesstoken}'}
         async with aiohttp.ClientSession() as session:
-            async with session.get(url) as req:
+            async with session.get(url, headers=headers) as req:
                 if req.status != 200:
-                    return 'API请求失败，请联系管理员或稍后再尝试'
-                return await req.json()
-    except:
-        return False
-
-async def ApiInfo(project, url, data=None):
-    try:
-        if not data:
-            if project != 'mapinfo':
-                headers = {'Authorization' : f'Bearer {osutoken()[0]}'}
-            else:
-                headers = {'user-agent' : 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36'}
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, headers=headers) as req:
-                    if req.status != 200:
-                        if project == 'info' or project == 'bind':
-                            return '未找到该玩家，请确认玩家ID'
-                        elif project == 'recent':
-                            return '未找到该玩家，请确认玩家ID'
-                        elif project == 'score':
-                            return '未找到该地图成绩，请确认地图ID或模式'
-                        elif project == 'bp':
-                            return '未找到该玩家BP'
-                        elif project == 'map':
-                            return '未找到该地图，请确认地图ID'
-                        else:
-                            return 'API请求失败，请联系管理员或稍后再尝试'
-                    if project != 'mapinfo':
-                        return await req.json()
-                    return await req.json(content_type='text/html', encoding='utf-8')
-        else:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, data=data) as req:
-                    if req.status != 200:
+                    if project == 'info' or project == 'bind':
+                        return '未找到该玩家，请确认玩家ID'
+                    elif project == 'recent':
+                        return '未找到该玩家，请确认玩家ID'
+                    elif project == 'score':
+                        return '未找到该地图成绩，请确认地图ID或模式'
+                    elif project == 'bp':
+                        return '未找到该玩家BP'
+                    elif project == 'map':
+                        return '未找到该地图，请确认地图ID'
+                    else:
                         return 'API请求失败，请联系管理员或稍后再尝试'
+                if project == 'mapinfo':
+                    return await req.json(content_type='text/html', encoding='utf-8')
+                else:
                     return await req.json()
     except Exception as e:
-        hoshino.logger.error(e)
-        return e
-
-async def get_accesstoken():
-    token = osutoken()
-    url = 'https://osu.ppy.sh/oauth/token'
-    data = {
-        'grant_type' : 'refresh_token',
-        'client_id' : token[2],
-        'client_secret' : token[3],
-        'refresh_token' : token[1]
-    }
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.post(url, data=data) as req:
-                if req.status != 200:
-                    hoshino.logger.error(f'OAuth Certification Error: {req.status}')
-                    return f'OAuth 认证失败 {req.status}'
-                newtoken = await req.json()
-    except Exception as e:
-        hoshino.logger.error(f'OAuth Certification Error: {e}')
-        return 'OAuth 认证失败'
-    new_json = {
-        'client_id' : token[2],
-        'client_secret' : token[3],
-        'access_token' : newtoken['access_token'],
-        'refresh_token' : newtoken['refresh_token']
-    }
-    try:
-        with open(token_json, 'w', encoding='utf-8') as f:
-            json.dump(new_json, f, ensure_ascii=False, indent=2)
-    except:
         traceback.print_exc()
-    hoshino.logger.info('OAuth Certification Successful')
-    return 'OAuth 认证令牌更新完毕'
+        logger.error(e)
+        return type(e)
