@@ -1,74 +1,64 @@
-from maniera.calculator import Maniera
-import pyttanko as osu
+from .api import PPApi
 
-def calc_acc_pp(osufile, mods_num):
-    acc_pp = []
-    p = osu.parser()
-    with open(osufile, 'r', encoding='utf-8') as f:
-        bmap = p.map(f)
+class PPCalc:
 
-    stars = osu.diff_calc().calc(bmap, mods_num)
-    for acc in range(95, 101):
-        c300, c100, c50 = osu.acc_round(acc, len(bmap.hitobjects), 0)
+    def __init__(self, mode: int, mapid: int) -> None:
+        self.mapid: int = mapid
+        self.mode: int = mode
 
-        pp, _, _, _, _ = osu.ppv2(
-            stars.aim, stars.speed, mods=mods_num,
-            n300=c300, n100=c100, n50=c50, bmap=bmap
-        )
+    def __data(self, mode: int, info: dict):
+        self.acc = int(info['Accuracy'])
+        self.combo = info['Combo']
+        self.c300 = info['Great']
+        self.miss = info['Miss']
+        self.pp = int(info['pp'])
+        self.ifpp = int(info['ifpp'])
+        self.stars = info['mapinfo']['star_rating']
+        if mode == 0:
+            self.aim = int(info['Aim'])
+            self.max_combo = info['Max Combo']
+            self.c50 = info['Meh']
+            self.od = info['OD']
+            self.c100 = info['Ok']
+            self.speed = int(info['Speed'])
+            self.ar = info['mapinfo']['ar_rating']
+            self.od = info['mapinfo']['od_rating']
+            self.sspp = int(info['accpp'][-1])
+        elif mode == 1:
+            self.c100 = info['Ok']
+            self.strain = info['Strain']
+            self.c50 = info['Meh']
+        elif mode == 2:
+            pass
+        else:
+            self.c100 = info['Ok']
+            self.strain = info['Strain']
+            self.perfect = info['Perfect']
 
-        acc_pp.append(int(pp))
-        
-    return acc_pp
-    
-def calc_pp(osufile, mods_num, maxcb, c50, c100, c300, miss):
-    p = osu.parser()
-    with open(osufile, 'r', encoding='utf-8') as f:
-        bmap = p.map(f)
+    async def if_pp(self, mods: list) -> int:
+        info = await PPApi(self.mode, self.mapid, mods=mods)
+        self.__data(self.mode, info)
+        if self.mode == 0:
+            return self.ifpp, self.stars, self.ar, self.od
+        else:
+            return self.ifpp, self.stars
 
-    stars = osu.diff_calc().calc(bmap, mods_num)
+    async def osu_pp(self, acc: float, combo: int, c100: int, c50: int, miss: int, mods: list):
+        info = await PPApi(0, self.mapid, acc * 100, combo, c100, c50, miss=miss, mods=mods)
+        self.__data(self.mode, info)
+        return self.pp, self.ifpp, self.sspp, self.aim, self.speed, self.acc, self.stars, self.ar, self.od
 
-    pp, aim, speed, acc, accuracy = osu.ppv2(
-        stars.aim, stars.speed, mods=mods_num,
-        combo=maxcb, n300=c300, n100=c100, n50=c50, nmiss=miss, bmap=bmap
-    )
+    async def taiko_pp(self, acc: float, combo: int, c100: int, miss: int, mods: list):
+        info = await PPApi(1, self.mapid, acc * 100, combo, c100, miss=miss, mods=mods)
+        self.__data(self.mode, info)
+        return self.pp, self.ifpp, self.stars
 
-    play_pp = int(pp)
-    aim_pp = int(aim)
-    speed_pp = int(speed)
-    acc_pp = int(acc)
-    return play_pp, aim_pp, speed_pp, acc_pp
-   
-def calc_if(osufile, mods_num, c50, c100, mapcb):
-    p = osu.parser()
-    with open(osufile, 'r', encoding='utf-8') as f:
-        bmap = p.map(f)
+    async def catch_pp(self, acc: float, combo: int, miss: int, mods: list):
+        info = await PPApi(2, self.mapid, acc * 100, combo, miss=miss, mods=mods)
+        self.__data(self.mode, info)
+        return self.pp, self.ifpp, self.stars
 
-    stars = osu.diff_calc().calc(bmap, mods_num)
-
-    pp = osu.ppv2(
-        stars.aim, stars.speed, mods=mods_num,
-        n100=c100, n50=c50, nmiss=0, max_combo=mapcb, bmap=bmap
-    )
-
-    return int(pp[0])
-
-def calc_mania_pp(osufile, mods_num, score):
-    calc = Maniera(osufile, mods_num, score)
-    calc.calculate()
-    return int(calc.pp)
-
-def calc_acc(mode, c50, c100, c300, cmiss, ckatu, cgeki):
-    if mode == 0:
-        h1 = c50 * 50.0 + c100 * 100.0 + c300 * 300.0
-        h2 = (c50 + c100 + c300 + cmiss) * 300.0
-    elif mode == 1:
-        h1 = (c100 + ckatu) * 0.5 + c300 + cgeki
-        h2 = cmiss + c100 + ckatu + c300 + cgeki
-    elif mode == 2:
-        h1 = c50 + c100 + c300
-        h2 = ckatu + cmiss + c50 + c100 + c300
-    elif mode == 3:
-        h1 = (c50 * 50.0 + c100 * 100.0 + ckatu * 200.0 + (c300 + cgeki) * 300.0)
-        h2 = (c50 + c100 + ckatu + cgeki + c300 + cmiss) * 300.0
-
-    return h1 / h2 * 100.0
+    async def mania_pp(self, score: int, mods: list):
+        info = await PPApi(3, self.mapid, score=score, mods=mods)
+        self.__data(self.mode, info)
+        return self.pp, self.ifpp, self.stars
