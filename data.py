@@ -1,5 +1,4 @@
-from .mods import modsnum, setmodslist
-import os
+from .mods import Mods
 
 class UserInfo:
     '''
@@ -25,7 +24,7 @@ class UserInfo:
         self.grank: int = self.play['global_rank'] if self.play['global_rank'] else 0
         self.pp: float = self.play['pp']
         self.r_score: int = self.play['ranked_score']
-        self.acc: float = self.play['hit_accuracy']
+        self.acc: float = round(self.play['hit_accuracy'], 2)
         self.play_count: int = self.play['play_count']
         self.play_time: int = self.play['play_time']
         self.play_hits: int = self.play['total_hits']
@@ -79,14 +78,15 @@ class ScoreInfo:
         self.supporter: bool = self.user['is_supporter']
         self.username: str = self.user['username']
 
-    def __SetMods(self, mods: list, min: int = 0):
+    def __SetMods(self, mods: list, max: int = 0, best: bool = False):
         '''
         计算开启 `mod` 的数字和
         '''
-        setmods = modsnum(mods)
-        self.modslist = setmodslist(self.info, setmods)
-        if min:
-            self.modsbool = len(self.modslist) < min
+        self.modslist = Mods(self.info, mods).getmodslist()
+        if len(self.modslist) > max:
+            self.modslist = self.modslist[:max]
+        elif best:
+            self.modslist = False
 
     def RecentScore(self) -> dict:
         '''
@@ -94,26 +94,30 @@ class ScoreInfo:
         '''
         return self.__AllScore(self.info[0])
 
-    def BPScore(self, bp: int = 0, mods: list = []) -> dict:
+    def BPScore(self, best: int, mods: list = []) -> dict:
         '''
         返回 `BP` 数据
         '''
-        if bp:
-            if mods:
-                self.__SetMods(mods)
-                if self.modslist:
-                    self.info = self.info[self.modslist[bp - 1]]
-                else:
-                    return
+        if mods:
+            self.__SetMods(mods, best, True)
+            if self.modslist:
+                self.info = self.info[self.modslist[best - 1]]
             else:
-                self.info = self.info[bp - 1]
+                self.info = self.modslist
+                return
+        else:
+            self.info = self.info[best - 1]
 
         return self.__AllScore(self.info)
 
-    def MapScore(self) -> dict:
+    def MapScore(self, mods: list = []) -> dict:
         '''
         返回 `Score` 成绩数据
         '''
+        if mods:
+            self.__SetMods(mods)
+            if self.modslist:
+                self.info = self.info[self.modslist[0]]
         self.grank: int = self.info['position']
         self.info: dict = self.info['score']
         self.headericon: str = self.info['user']['cover']['url']
@@ -126,9 +130,9 @@ class ScoreInfo:
         '''
         self.bpList = []
         if mods:
-            self.__SetMods(mods, min)
+            self.__SetMods(mods, max)
             if self.modslist:
-                self.bpList = self.modslist[min-1:max]
+                self.bpList = self.modslist
         else:
             self.bpList = range(min-1, max)
         
