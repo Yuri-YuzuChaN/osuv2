@@ -1,131 +1,144 @@
-import sqlite3
-import os
+import sqlite3, os, hoshino
+from typing import Tuple, Union
 
 SQL = os.path.expanduser('~/.hoshino/osu.db')
+logger = hoshino.new_logger('osuv2_SQL')
 
-class osusql():
+class UserSQL:
+
     def __init__(self):
-        os.makedirs(os.path.dirname(SQL), exist_ok=True)
-        self.makesql()
+        self.makeuser()
         self.makeinfo()
 
-    def con(self):
+    def conn(self):
         return sqlite3.connect(SQL)
 
-    def makesql(self):
+    def makeuser(self):
         try:
-            self.con().execute('''CREATE TABLE userinfo(
-                id      INTEGER         PRIMARY KEY     NOT NULL,
-                qqid    INTEGER         NOT NULL,
-                osuid   INTEGER         NOT NULL,
-                osuname TEXT            NOT NULL,
-                osumod  INTEGER         NOT NULL
+            self.conn().execute('''CREATE TABLE USER(
+                ID      INTEGER         PRIMARY KEY     NOT NULL,
+                QQID    INTEGER         NOT NULL,
+                OSUID   INTEGER         NOT NULL,
+                OSUNAME TEXT            NOT NULL,
+                OSUMODE INTEGER         NOT NULL
                 )''')
+        except sqlite3.OperationalError:
+            pass
         except Exception as e:
-            print(e)
+            logger.error(e)
 
     def makeinfo(self):
         try:
-            self.con().execute('''CREATE TABLE newinfo(
-                id          INTEGER         PRIMARY KEY     NOT NULL,
-                osuid       INTEGER         NOT NULL,
-                c_ranked    INTEGER         NOT NULL,
-                g_ranked    INTEGER         NOT NULL,
-                pp          REAL            NOT NULL,
-                acc         REAL            NOT NULL,
-                pc          INTEGER         NOT NULL,
-                count       INTEGER         NOT NULL,
-                osumod      INTEGER         NOT NULL
+            self.conn().execute('''CREATE TABLE INFO(
+                ID          INTEGER         PRIMARY KEY     NOT NULL,
+                OSUID       INTEGER         NOT NULL,
+                C_RANKED    INTEGER         NOT NULL,
+                G_RANKED    INTEGER         NOT NULL,
+                PP          REAL            NOT NULL,
+                ACC         REAL            NOT NULL,
+                PC          INTEGER         NOT NULL,
+                COUNT       INTEGER         NOT NULL,
+                OSUMODE     INTEGER         NOT NULL
             )''')
+        except sqlite3.OperationalError:
+            pass
         except Exception as e:
-            print(e)
+            logger.error(e)
 
-    def get_name_mod(self, uid):
+    def get_user(self, qqid: int) -> Union[tuple, bool]:
+        '''
+        获取玩家信息，返回元组 `id`, `name`, `mode`
+        '''
         try:
-            result = self.con().execute(f'select osuname, osumod from userinfo where qqid = {uid}').fetchall()
+            result = self.conn().execute(f'SELECT OSUID, OSUNAME, OSUMODE FROM USER WHERE QQID = {qqid}').fetchall()
+            if not result:
+                return False
+            else:
+                return result[0]
+        except Exception as e:
+            logger.error(e)
+
+    def get_info(self, id: int, mode: int) -> Union[tuple, bool]:
+        '''
+        获取玩家游玩信息，返回元组
+        '''
+        try:
+            result = self.conn().execute(f'SELECT * FROM INFO WHERE OSUID = {id} and OSUMODE = {mode}').fetchall()
+            if not result:
+                return False
+            else:
+                return result[0][2:-1]
+        except Exception as e:
+            logger.error(e)
+            return False
+
+    def get_user_osuid(self) -> Tuple:
+        '''
+        获取所有玩家 `OSUID`
+        '''
+        try:
+            result = self.conn().execute(f'SELECT OSUID FROM USER').fetchall()
             return result
         except Exception as e:
-            print(e)
+            logger.error(e)
+            return False
+
+    def insert_user(self, qqid: int, id: int, name: str):
+        try:
+            conn = self.conn()
+            conn.execute(f'INSERT INTO USER VALUES (NULL, {qqid}, {id}, "{name}", 0)')
+            conn.commit()
+            return True
+        except Exception as e:
+            logger.error(e)
+            return False
     
-    def get_id_mod(self, uid):
+    def insert_info(self, id: int, c_ranked: int, g_ranked: int, pp: int, acc: int, pc: int, count: int, mode: int):
         try:
-            result = self.con().execute(f'select osuid, osumod from userinfo where qqid = {uid}').fetchall()
-            return result
-        except Exception as e:
-            print(e)
-
-    def get_all_id(self):
-        try:
-            result = self.con().execute('select osuid from userinfo').fetchall()
-            return result
-        except Exception as e:
-            print(e)
-            return False
-        
-    def get_all_newinfo(self, uid, osumod):
-        try:
-            result = self.con().execute(f'select * from newinfo where osuid = {uid} and osumod = {osumod}').fetchall()
-            return result
-        except Exception as e:
-            print(e)
-            return False
-
-    def insert_user(self, uid, osuid, osuname):
-        try:
-            con = self.con()
-            con.execute(f'insert into userinfo values (NULL, {uid}, {osuid}, "{osuname}", 0)')
-            con.commit()
+            conn = self.conn()
+            conn.execute(f'INSERT INTO INFO VALUES (NULL, {id}, {c_ranked}, {g_ranked}, {pp}, {acc}, {pc}, {count}, {mode})')
+            conn.commit()
             return True
         except Exception as e:
-            print(e)
-            return False
-    
-    def insert_all_info(self, uid, c_ranked, g_ranked, pp, acc, pc, count, osumod):
-        try:
-            con = self.con()
-            con.execute(f'insert into newinfo values (NULL, {uid}, {c_ranked}, {g_ranked}, {pp}, {acc}, {pc}, {count}, {osumod})')
-            con.commit()
-            return True
-        except Exception as e:
-            print(e)
+            logger.error(e)
             return False
 
-    def update_mode(self, uid, osumod):
+    def update_mode(self, qqid: int, mode: int):
         try:
-            con = self.con()
-            con.execute(f'update userinfo set osumod = {osumod} where qqid = {uid}')
-            con.commit()
+            conn = self.conn()
+            conn.execute(f'UPDATE USER SET OSUMODE = {mode} WHERE QQID = {qqid}')
+            conn.commit()
             return True
         except Exception as e:
-            print(e)
+            logger.error(e)
             return False
 
-    def update_all_info(self, uid, c_ranked, g_ranked, pp, acc, pc, count, osumod):
+    def update_info(self, id: int, c_ranked: int, g_ranked: int, pp: int, acc: int, pc: int, count: int, mode: int):
         try:
-            con = self.con()
-            con.execute(f'update newinfo set c_ranked = {c_ranked}, g_ranked = {g_ranked}, pp = {pp}, acc = {acc}, pc = {pc}, count = {count} where osuid = {uid} and osumod = {osumod}')
-            con.commit()
+            conn = self.conn()
+            conn.execute(f'UPDATE INFO SET C_RANKED = {c_ranked}, G_RANKED = {g_ranked}, PP = {pp}, ACC = {acc}, PC = {pc}, COUNT = {count} where OSUID = {id} and OSUMODE = {mode}')
+            conn.commit()
             return True
         except Exception as e:
-            print(e)
+            logger.error(e)
             return False
 
-    def delete_user(self, uid):
+    def delete_user(self, qqid: int):
         try:
-            con = self.con()
-            con.execute(f'delete from userinfo where qqid = {uid}')
-            con.commit()
+            conn = self.conn()
+            conn.execute(f'DELETE FROM USER WHERE QQID = {qqid}')
+            conn.commit()
             return True
         except Exception as e:
-            print(e)
+            logger.error(e)
             return False
 
-    def delete_newinfo(self, uid):
+    def delete_info(self, id: int):
         try:
-            con = self.con()
-            con.execute(f'delete from newinfo where osuid = {uid}')
-            con.commit()
+            conn = self.conn()
+            conn.execute(f'DELETE FROM INFO WHERE OSUID = {id}')
+            conn.commit()
             return True
         except Exception as e:
-            print(e)
+            logger.error(e)
             return False
