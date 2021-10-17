@@ -32,7 +32,7 @@ class UserInfo:
         self.count: int = self.play['total_hits']
         self.g_counts: dict = self.play['grade_counts']
         self.gc: list = self.g_counts['ssh'], self.g_counts['ss'], self.g_counts['sh'], self.g_counts['s'], self.g_counts['a']
-        self.crank: int = self.play['country_rank'] if self.play['country_rank'] else 0
+        self.crank: int = self.play['rank']['country'] if self.play['rank']['country'] else 0
 
 class ScoreInfo:
     '''
