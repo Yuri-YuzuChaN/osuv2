@@ -252,9 +252,9 @@ async def draw_info(id: Union[int, str], mode: str, isint: bool) -> Union[str, M
         info_json = await OsuApi('info', id, mode, isint=isint)
         if not info_json:
             return '未查询到该玩家'
-        info = UserInfo(info_json)
-        if info.play_count == 0:
+        if not info_json['play_count']:
             return f'此玩家尚未游玩过{GMN[mode]}模式'
+        info = UserInfo(info_json)
         #对比
         user = USER.get_info(info.uid, FGM[mode])
         if user:
