@@ -1,10 +1,9 @@
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
-from PIL.Image import Image
 from datetime import datetime, timedelta
 from io import BytesIO, TextIOWrapper
-from typing import Union, Optional, List
-from hoshino import MessageSegment
-import os, math, traceback, base64, hoshino
+from typing import Union, Optional
+from hoshino import MessageSegment, logger
+import os, math, traceback, base64
 import matplotlib.pyplot as plt
 
 from .api import OsuApi, SayoApi
@@ -16,7 +15,6 @@ from .data import SayoInfo, UserInfo, ScoreInfo, Beatmapset
 
 USER = UserSQL()
 osufile = os.path.join(os.path.dirname(__file__), 'osufile')
-logger = hoshino.new_logger('osuv2_draw')
 
 Torus_Regular = os.path.join(osufile, 'fonts', 'Torus Regular.otf')
 Torus_SemiBold = os.path.join(osufile, 'fonts', 'Torus SemiBold.otf')
@@ -30,7 +28,7 @@ FGM = {'osu' : 0 , 'taiko' : 1 , 'fruits' : 2 , 'mania' : 3}
 
 class Tobase:
 
-    def __init__(self, img: Union[str, Image], format: Optional[str] = 'PNG'):
+    def __init__(self, img: str, format: Optional[str] = 'PNG'):
         '''`img : Union[str, Image] 图片`
         `format : Optional[str] 图片类型，默认PNG`'''
         self.img = img
@@ -91,7 +89,7 @@ def draw_fillet(img, radii):
     img.putalpha(alpha)
     return img
 
-def info_calc(n1: int, n2: int, rank: bool=False, pp: bool=False) -> List[str, int]:
+def info_calc(n1: int, n2: int, rank: bool=False, pp: bool=False):
     num = n1 - n2
     if num < 0:
         if rank:
@@ -123,7 +121,7 @@ def wedge_acc(acc: float) -> BytesIO:
     plt.savefig(img, transparent=True)
     return img
 
-def crop_bg(size: str, path: Union[str, BytesIO]) -> Image:
+def crop_bg(size: str, path: Union[str, BytesIO]):
     bg = Image.open(path).convert('RGBA')
     bg_w, bg_h = bg.size[0], bg.size[1]
     if size == 'BG':
@@ -177,7 +175,7 @@ def crop_bg(size: str, path: Union[str, BytesIO]) -> Image:
         sf = bg.resize((fix_w, fix_h))
         return sf
 
-def stars_diff(mode: str, stars: float) -> Image:
+def stars_diff(mode: str, stars: float):
     if mode == 0:
         mode = 'std'
     elif mode == 1:
@@ -253,7 +251,7 @@ async def draw_info(id: Union[int, str], mode: str, isint: bool) -> Union[str, M
         if not info_json:
             return '未查询到该玩家'
         info = UserInfo(info_json)
-        if not info.play_count:
+        if info.play_count == 0:
             return f'此玩家尚未游玩过{GMN[mode]}模式'
         #对比
         user = USER.get_info(info.uid, FGM[mode])
