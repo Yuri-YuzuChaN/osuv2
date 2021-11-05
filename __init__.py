@@ -1,6 +1,6 @@
 import re, os, asyncio
 from hoshino.config import SUPERUSERS
-from hoshino import Service, priv, new_logger
+from hoshino import Service, priv, logger
 from hoshino.service import sucmd
 from hoshino.typing import CQEvent, CommandSession
 from nonebot import get_bot
@@ -14,7 +14,6 @@ from .api import token
 
 sv = Service('osuv2', manage_priv=priv.ADMIN, enable_on_default=True)
 helpimg = os.path.join(os.path.dirname(__file__), 'osufile', 'help.png')
-logger = new_logger('osuv2')
 
 GM = {0 : 'osu', 1 : 'taiko', 2 : 'fruits', 3 : 'mania'}
 GMN = {0 : 'Std', 1 : 'Taiko', 2 : 'Ctb', 3 : 'Mania'}
