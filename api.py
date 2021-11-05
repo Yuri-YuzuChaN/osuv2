@@ -1,11 +1,10 @@
-from typing import Union
-import aiohttp, json, os, traceback, hoshino
+from typing import Type, Union
+from hoshino import logger
+import aiohttp, json, os, traceback
 
 api = 'https://osu.ppy.sh/api/v2'
 sayoapi = 'https://api.sayobot.cn'
 ppcalcapi: str = 'http://yuzuai.cn:6321'
-
-logger = hoshino.new_logger('osuv2_api')
 
 class osutoken:
 
@@ -88,7 +87,7 @@ async def SayoApi(setid: int) -> Union[dict, bool]:
         return False
 
 async def PPApi(mode: int, mapid: int, acc: float=100, combo: int=0, good: int=0, bad: int=0,
-                miss: int=0, score: int=1000000, mods: list=[]) -> Union[dict, type[Exception]]:
+                miss: int=0, score: int=1000000, mods: list=[]) -> Union[dict, Type[Exception]]:
     try:
         mods_t = ''
         if mods:
@@ -109,9 +108,8 @@ async def PPApi(mode: int, mapid: int, acc: float=100, combo: int=0, good: int=0
     except Exception as e:
         traceback.print_exc()
         logger.error(e)
-        return type(e)
 
-async def ApiInfo(project: str, url: str) -> Union[dict, str, type[Exception]]:
+async def ApiInfo(project: str, url: str) -> Union[dict, str, Type[Exception]]:
     try:
         if project == 'mapinfo' or project == 'PPCalc':
             headers = {'user-agent' : 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36'}
