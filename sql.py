@@ -1,8 +1,8 @@
-import sqlite3, os, hoshino
+import sqlite3, os
+from hoshino import logger
 from typing import Tuple, Union
 
 SQL = os.path.expanduser('~/.hoshino/osu.db')
-logger = hoshino.new_logger('osuv2_SQL')
 
 class UserSQL:
 
