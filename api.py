@@ -1,6 +1,8 @@
-from typing import Type, Union
+from typing import Union, Type
+import aiohttp, json, os, traceback, hoshino
+from nonebot import get_bot
 from hoshino import logger
-import aiohttp, json, os, traceback
+from hoshino.config import SUPERUSERS
 
 api = 'https://osu.ppy.sh/api/v2'
 sayoapi = 'https://api.sayobot.cn'
@@ -16,6 +18,7 @@ class osutoken:
         self.token: dict = json.load(open(self.token_json, 'r', encoding='utf-8'))
 
     async def update_token(self) -> str:
+        bot = get_bot()
         url = 'https://osu.ppy.sh/oauth/token'
         data = {
             'grant_type' : 'refresh_token',
@@ -28,11 +31,15 @@ class osutoken:
                 async with session.post(url, data=data) as req:
                     if req.status != 200:
                         logger.error(f'OAuth Certification Error: {req.status}')
-                        return f'OAuth 认证失败 {req.status}'
+                        for id in SUPERUSERS:
+                            await bot.send_private_msg(user_id=id, message=f'OAuth 认证失败 {req.status}')
+                        return
                     newtoken = await req.json()
         except Exception as e:
             logger.error(f'OAuth Certification Error: {e}')
-            return f'OAuth 认证失败: {type(e)}'
+            for id in SUPERUSERS:
+                await bot.send_private_msg(user_id=id, message=f'OAuth 认证失败: {type(e)}')
+            return
 
         self.token['access_token'] = newtoken['access_token']
         self.token['refresh_token'] = newtoken['refresh_token']
@@ -44,7 +51,8 @@ class osutoken:
             traceback.print_exc()
             logger.error(e)
         logger.info('OAuth Certification Successful')
-        return 'OAuth 认证令牌更新完毕'
+        for id in SUPERUSERS:
+            await bot.send_private_msg(user_id=id, message='OAuth 认证令牌更新完毕')
 
     @property
     def accesstoken(self) -> str:
@@ -57,9 +65,11 @@ async def OsuApi(project: str, id: Union[int, str] = 0, mode: str = 'osu', mapid
     try:
         if id:
             if not isint:
-                url = f'{api}/users/{id}'
-                info = await ApiInfo(project, url)
-                id = info['id']
+                info = await User(f'{api}/users/{id}')
+                if isinstance(info, str):
+                    return info
+                else:
+                    id = info['id']
         if project == 'info' or project == 'bind' or project == 'update':
             url = f'{api}/users/{id}/{mode}'
         elif project == 'recent':
@@ -70,7 +80,7 @@ async def OsuApi(project: str, id: Union[int, str] = 0, mode: str = 'osu', mapid
             else:
                 url = f'{api}/beatmaps/{mapid}/scores/users/{id}'
         elif project == 'bp':
-            url = f'{api}/users/{id}/scores/best?mode={mode}&limit=50'
+            url = f'{api}/users/{id}/scores/best?mode={mode}&limit=100'
         elif project == 'map':
             url = f'{api}/beatmaps/{mapid}'
         else:
@@ -106,8 +116,26 @@ async def PPApi(mode: int, mapid: int, acc: float=100, combo: int=0, good: int=0
             url += f'&c={combo}'
         return await ApiInfo('PPCalc', url)
     except Exception as e:
-        traceback.print_exc()
-        logger.error(e)
+        logger.error(traceback.print_exc())
+        return f'Error: {type(e)}'
+
+async def User(url: str) -> Union[dict, str]:
+    try:
+        header = {'Authorization' : f'Bearer {token.accesstoken}'}
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=header) as req:
+                if req.status == 401:
+                    await token.update_token()
+                    return await User(url)
+                elif req.status == 404:
+                    return '未找到该玩家，请确认玩家ID'
+                elif req.status == 200:
+                    return await req.json()
+                else:
+                    return 'API请求失败，请联系管理员'
+    except Exception as e:
+        logger.error(traceback.print_exc())
+        return f'Error: {type(e)}'
 
 async def ApiInfo(project: str, url: str) -> Union[dict, str, Type[Exception]]:
     try:
@@ -117,7 +145,11 @@ async def ApiInfo(project: str, url: str) -> Union[dict, str, Type[Exception]]:
             headers = {'Authorization' : f'Bearer {token.accesstoken}'}
         async with aiohttp.ClientSession() as session:
             async with session.get(url, headers=headers) as req:
-                if req.status != 200:
+                if req.status == 401:
+                    logger.info('OAuth 认证令牌过期，正在重新更新Token')
+                    await token.update_token()
+                    return await ApiInfo(project, url)
+                elif req.status == 404:
                     if project == 'info' or project == 'bind':
                         return '未找到该玩家，请确认玩家ID'
                     elif project == 'recent':
@@ -135,6 +167,5 @@ async def ApiInfo(project: str, url: str) -> Union[dict, str, Type[Exception]]:
                 else:
                     return await req.json()
     except Exception as e:
-        traceback.print_exc()
-        logger.error(e)
-        return type(e)
+        logger.error(traceback.print_exc())
+        return f'Error: {type(e)}'
