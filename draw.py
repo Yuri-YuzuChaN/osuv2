@@ -641,16 +641,8 @@ async def draw_score(project: str,
         msg = f'Error: {type(e)}'
     return msg
 
-async def best_pfm(id: Union[str, int], mode: str, min: int, max: int, mods: list = [], isint: bool = False) -> Union[str, MessageSegment]:  
+def image_pfm(project: str, user: str, info: ScoreInfo, mode: str, min: int = 0, max: int = 0) -> Union[str, MessageSegment]:
     try:
-        BPInfo = await OsuApi('bp', id, mode, isint=isint)
-        if isinstance(BPInfo, str):
-            return BPInfo
-        info = ScoreInfo(BPInfo)
-        info.BestBPScore(min, max, mods)
-        if mods and not info.modslist:
-            return f'未找到开启 {"|".join(mods)} Mods的成绩'
-        user = BPInfo[0]['user']['username']
         bplist_len = len(info.bpList)
         im = Image.new('RGBA', (1500, 180 + 82 * (bplist_len - 1)), (31, 41, 46, 255))
         bp_bg = os.path.join(osufile, 'Best Performance.png')
@@ -658,7 +650,11 @@ async def best_pfm(id: Union[str, int], mode: str, min: int, max: int, mods: lis
         im.alpha_composite(BG_img)
         f_div = Image.new('RGBA', (1500, 2), (255, 255, 255, 255)).convert('RGBA')
         im.alpha_composite(f_div, (0, 100))
-        w_user = datatext(1450, 50, 25, f"{user}'s | {mode.capitalize()} | BP {min} - {max}", Torus_SemiBold, anchor='rm')
+        if project == 'bp':
+            uinfo = f"{user}'s | {mode.capitalize()} | BP {min} - {max}"
+        else:
+            uinfo = f"{user}'s | {mode.capitalize()} | Today New BP"
+        w_user = datatext(1450, 50, 25, uinfo, Torus_SemiBold, anchor='rm')
         im = draw_text(im, w_user)
         for num, bp in enumerate(info.bpList):
             h_num = 82 * num
@@ -671,17 +667,20 @@ async def best_pfm(id: Union[str, int], mode: str, min: int, max: int, mods: lis
                     im.alpha_composite(mods_img, (1000 + 50 * mods_num, 126 + h_num))
                 if (info.rank == 'X' or info.rank == 'S') and ('HD' in info.mods or 'FL' in info.mods):
                     info.rank += 'H'
+            #BP排名
+            rank_bp = datatext(15, 144 + h_num, 20, bp + 1, Meiryo_Regular, anchor='lm')
+            im = draw_text(im, rank_bp)
             #rank
             rank_img = os.path.join(osufile, 'ranking', f'ranking-{info.rank}.png')
             rank_bg = Image.open(rank_img).convert('RGBA').resize((64, 32))
-            im.alpha_composite(rank_bg, (30, 128 + h_num))
+            im.alpha_composite(rank_bg, (45, 128 + h_num))
             #曲名&作曲
-            w_title_artist = datatext(100, 130 + h_num, 20, f'{info.title} | by {info.artist}', Meiryo_Regular, anchor='lm')
+            w_title_artist = datatext(125, 130 + h_num, 20, f'{info.title} | by {info.artist}', Meiryo_Regular, anchor='lm')
             im = draw_text(im, w_title_artist)
             #地图版本&时间
             old_time = datetime.strptime(info.date.replace('+00:00', ''), '%Y-%m-%dT%H:%M:%S')
             new_time = (old_time + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
-            w_version_time = datatext(100, 158 + h_num, 18, f'{info.version} | {new_time}', Torus_Regular, anchor='lm')
+            w_version_time = datatext(125, 158 + h_num, 18, f'{info.version} | {new_time}', Torus_Regular, anchor='lm')
             im = draw_text(im, w_version_time, color=(238, 171, 0, 255))
             #acc
             w_acc = datatext(1250, 130 + h_num, 22, f'{info.acc * 100:.2f}%', Torus_SemiBold, anchor='lm')
@@ -700,6 +699,27 @@ async def best_pfm(id: Union[str, int], mode: str, min: int, max: int, mods: lis
 
         base = Tobase(im).image()
         msg = MessageSegment.image(base)
+    except Exception as e:
+        logger.error(f'制图错误：{traceback.print_exc()}')
+        msg = f'Error: {type(e)}'
+    return msg
+
+async def best_pfm(project: str, id: Union[str, int], mode: str, min: int = 0, max: int = 0, mods: list = [], isint: bool = False) -> Union[str, MessageSegment]:  
+    try:
+        BPInfo = await OsuApi('bp', id, mode, isint=isint)
+        if isinstance(BPInfo, str):
+            return BPInfo
+        info = ScoreInfo(BPInfo)
+        user = BPInfo[0]['user']['username']
+        if project == 'bp':
+            info.BestBPScore(min, max, mods)
+            if mods and not info.modslist:
+                return f'未找到开启 {"|".join(mods)} Mods的成绩'
+        elif project == 'tbp':
+            info.NewBPScore()
+            if not info.bpList:
+                return f'今天没有新增的BP成绩'
+        msg = image_pfm(project, user, info, mode, min, max)
     except Exception as e:
         logger.error(f'制图错误：{traceback.print_exc()}')
         msg = f'Error: {type(e)}'
