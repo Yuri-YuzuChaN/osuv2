@@ -423,14 +423,6 @@ async def recent(bot, ev:CQEvent):
 @sucmd('updateoauth', aliases=('更新OAuth'))
 async def updateoauth(session: CommandSession):
     msg = await token.update_token()
-    await session.send(msg)
-
-@sv.scheduled_job('cron', hour='23')
-async def refresh_token_():
-    msg = await token.update_token()
-    bot = get_bot()
-    for user_id in SUPERUSERS:
-        await bot.send_msg(user_id=user_id, message=msg)
 
 @sv.scheduled_job('cron', hour='0')
 async def update_info():
