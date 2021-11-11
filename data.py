@@ -1,4 +1,6 @@
 from .mods import Mods
+from datetime import datetime, timedelta
+from time import mktime, strptime
 
 class UserInfo:
     '''
@@ -147,6 +149,19 @@ class ScoreInfo:
         self.title: str = self.map['title_unicode'] if self.map['title_unicode'] else self.map['title']
         
         return self.__AllScore(self.info[bp])
+    
+    def NewBPScore(self) -> dict:
+        self.bpList = []
+        for num, i in enumerate(self.info):
+            today = datetime.now().date()
+            today_stamp = mktime(strptime(str(today), '%Y-%m-%d'))
+            playtime = datetime.strptime(i['created_at'].replace('+00:00', ''), '%Y-%m-%dT%H:%M:%S') + timedelta(hours=8)
+            play_stamp = mktime(strptime(str(playtime), '%Y-%m-%d %H:%M:%S'))
+            
+            if play_stamp > today_stamp:
+                self.bpList.append(num)
+        
+        return self.bpList
 
 class Beatmapset:
     '''
