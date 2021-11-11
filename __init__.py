@@ -205,6 +205,7 @@ def limits(args: str) -> list:
 @sv.on_prefix(('pfm', 'Pfm', 'PFM'))
 async def pfm(bot, ev:CQEvent):
     qqid = ev.user_id
+    isint = False
     args: list[str] = ev.message.extract_plain_text().strip().split()
     while '' in args:
         args.remove('')
@@ -238,7 +239,7 @@ async def pfm(bot, ev:CQEvent):
                 isint = True
         elif '-' in args[0]:
             min, max = limits(args[1])
-            id, mode, mods = ' '.join(args[0]), user[2], 0
+            id, mode, mods = args[0], user[2], 0
         else:
             await bot.finish(ev, '请输入正确的参数', at_sender=True)
     elif len(args) == 3:
@@ -277,12 +278,30 @@ async def pfm(bot, ev:CQEvent):
         else:
             await bot.finish(ev, '请输入正确的参数', at_sender=True)
     
-    if min > 50 or max > 50:
-        await bot.finish(ev, '只允许查询bp 1-50 的成绩', at_sender=True)
+    if min > 100 or max > 100:
+        await bot.finish(ev, '只允许查询bp 1-100 的成绩', at_sender=True)
     if min >= max:
         await bot.finish(ev, '请输入正确的bp范围', at_sender=True)
 
-    data = await best_pfm(id, GM[mode], min, max, mods, isint=isint)
+    data = await best_pfm('bp', id, GM[mode], min, max, mods, isint)
+    await bot.send(ev, data, at_sender=True)
+
+@sv.on_prefix(('tbp', 'Tbp', 'TBP'))
+async def tbp(bot, ev:CQEvent):
+    qqid = ev.user_id
+    args: list[str] = ev.message.extract_plain_text().strip().split()
+    while '' in args:
+        args.remove('')
+    if 'CQ:at' in str(ev.message):
+        res = re.search(r'\[CQ:at,qq=(.*)\]', str(ev.message))
+        qqid = int(res.group(1))
+    user = USER.get_user(qqid)
+    infodata = InfoRecent(user, args)
+    if isinstance(infodata, str):
+        data = infodata
+    else:
+        id, mode, isint = infodata
+        data = await best_pfm('tbp', id, GM[mode], isint=isint)
     await bot.send(ev, data, at_sender=True)
 
 @sv.on_prefix(('map', 'MAP', 'Map'))
