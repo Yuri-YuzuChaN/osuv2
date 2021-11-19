@@ -713,6 +713,8 @@ async def best_pfm(project: str, id: Union[str, int], mode: str, min: int = 0, m
         user = BPInfo[0]['user']['username']
         if project == 'bp':
             info.BestBPScore(min, max, mods)
+            if isinstance(info.bpList, str):
+                return info.bpList
             if mods and not info.modslist:
                 return f'未找到开启 {"|".join(mods)} Mods的成绩'
         elif project == 'tbp':
