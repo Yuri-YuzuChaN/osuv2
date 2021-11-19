@@ -7,33 +7,34 @@ class PPCalc:
         self.mode: int = mode
 
     def __data(self, mode: int, info: dict):
-        self.acc = int(info['Accuracy'])
-        self.combo = info['Combo']
-        self.c300 = info['Great']
-        self.miss = info['Miss']
+        self.statistics = info['Statistics']
+        self.acc = int(self.statistics['Accuracy'])
+        self.combo = self.statistics['Combo']
+        self.c300 = self.statistics['Great']
+        self.miss = self.statistics['Miss']
         self.pp = int(info['pp'])
         self.ifpp = int(info['ifpp'])
         self.stars = info['mapinfo']['star_rating']
         if mode == 0:
             self.aim = int(info['Aim'])
             self.max_combo = info['Max Combo']
-            self.c50 = info['Meh']
+            self.c50 = self.statistics['Meh']
+            self.c100 = self.statistics['Ok']
             self.od = info['OD']
-            self.c100 = info['Ok']
             self.speed = int(info['Speed'])
             self.ar = info['mapinfo']['ar_rating']
             self.od = info['mapinfo']['od_rating']
             self.sspp = int(info['accpp'][-1])
         elif mode == 1:
-            self.c100 = info['Ok']
-            self.strain = info['Strain']
-            self.c50 = info['Meh']
+            self.c100 = self.statistics['Ok']
+            self.strain = self.statistics['Strain']
+            self.c50 = self.statistics['Meh']
         elif mode == 2:
             pass
         else:
-            self.c100 = info['Ok']
-            self.strain = info['Strain']
-            self.perfect = info['Perfect']
+            self.c100 = self.statistics['Ok']
+            self.strain = self.statistics['Strain']
+            self.perfect = self.statistics['Perfect']
 
     async def if_pp(self, mods: list) -> int:
         info = await PPApi(self.mode, self.mapid, mods=mods)
