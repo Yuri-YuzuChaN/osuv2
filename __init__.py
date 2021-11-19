@@ -382,7 +382,7 @@ async def unbind(bot, ev:CQEvent):
 @sv.on_prefix(('update', 'UPDATE', 'Update'))
 async def recent(bot, ev:CQEvent):
     qqid = ev.user_id
-    args: list[str] = ev.get_plaintext().strip().split()
+    args: list[str] = ev.message.extract_plain_text().strip().split()
     while '' in args:
         args.remove('')
     user = USER.get_user(qqid)
