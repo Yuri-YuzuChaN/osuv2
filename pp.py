@@ -27,13 +27,13 @@ class PPCalc:
             self.sspp = int(info['accpp'][-1])
         elif mode == 1:
             self.c100 = self.statistics['Ok']
-            self.strain = self.statistics['Strain']
+            self.strain = info['Strain']
             self.c50 = self.statistics['Meh']
         elif mode == 2:
             pass
         else:
             self.c100 = self.statistics['Ok']
-            self.strain = self.statistics['Strain']
+            self.strain = info['Strain']
             self.perfect = self.statistics['Perfect']
 
     async def if_pp(self, mods: list) -> int:
