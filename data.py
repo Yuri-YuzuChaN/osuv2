@@ -136,7 +136,10 @@ class ScoreInfo:
             if self.modslist:
                 self.bpList = self.modslist
         else:
-            self.bpList = range(min-1, max)
+            if max > len(self.info):
+                self.bpList = f'用户的bp数量为{len(self.info)}，超出指定范围'
+            else:
+                self.bpList = range(min-1, max)
         
         return self.bpList
 
