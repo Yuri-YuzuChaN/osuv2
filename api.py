@@ -17,7 +17,7 @@ class osutoken:
         self.token_json = os.path.join(os.path.dirname(__file__), 'token.json')
         self.token: dict = json.load(open(self.token_json, 'r', encoding='utf-8'))
 
-    async def update_token(self) -> str:
+    async def update_token(self) -> Union[str, bool]:
         bot = get_bot()
         url = 'https://osu.ppy.sh/oauth/token'
         data = {
@@ -31,15 +31,13 @@ class osutoken:
                 async with session.post(url, data=data) as req:
                     if req.status != 200:
                         logger.error(f'OAuth Certification Error: {req.status}')
-                        for id in SUPERUSERS:
-                            await bot.send_private_msg(user_id=id, message=f'OAuth 认证失败 {req.status}')
-                        return
+                        await bot.send_private_msg(user_id=SUPERUSERS[0], message=f'OAuth 认证失败 {req.status}，请尝试手动更新')
+                        return 'Error: API请求失败'
                     newtoken = await req.json()
         except Exception as e:
             logger.error(f'OAuth Certification Error: {e}')
-            for id in SUPERUSERS:
-                await bot.send_private_msg(user_id=id, message=f'OAuth 认证失败: {type(e)}')
-            return
+            await bot.send_private_msg(user_id=SUPERUSERS[0], message=f'OAuth 认证失败: {type(e)}，请尝试手动更新')
+            return 'Error: API请求失败'
 
         self.token['access_token'] = newtoken['access_token']
         self.token['refresh_token'] = newtoken['refresh_token']
@@ -51,9 +49,9 @@ class osutoken:
             traceback.print_exc()
             logger.error(e)
         logger.info('OAuth Certification Successful')
-        for id in SUPERUSERS:
-            await bot.send_private_msg(user_id=id, message='OAuth 认证令牌更新完毕')
-
+        await bot.send_private_msg(user_id=SUPERUSERS[0], message='OAuth 认证令牌更新完毕')
+        return True
+    
     @property
     def accesstoken(self) -> str:
         '''返回 `access_token` '''
@@ -147,7 +145,9 @@ async def ApiInfo(project: str, url: str) -> Union[dict, str, Type[Exception]]:
             async with session.get(url, headers=headers) as req:
                 if req.status == 401:
                     logger.info('OAuth 认证令牌过期，正在重新更新Token')
-                    await token.update_token()
+                    result = await token.update_token()
+                    if isinstance(result, str):
+                        return result
                     return await ApiInfo(project, url)
                 elif req.status == 404:
                     if project == 'info' or project == 'bind':
