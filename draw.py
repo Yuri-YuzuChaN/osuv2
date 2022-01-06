@@ -2,7 +2,8 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 from datetime import datetime, timedelta
 from io import BytesIO, TextIOWrapper
 from typing import Union, Optional
-from hoshino import MessageSegment, logger
+from hoshino.typing import MessageSegment
+from hoshino.log import new_logger
 import os, math, traceback, base64
 import matplotlib.pyplot as plt
 
@@ -15,6 +16,7 @@ from .data import SayoInfo, UserInfo, ScoreInfo, Beatmapset
 
 USER = UserSQL()
 osufile = os.path.join(os.path.dirname(__file__), 'osufile')
+logger = new_logger('osuv2_draw')
 
 Torus_Regular = os.path.join(osufile, 'fonts', 'Torus Regular.otf')
 Torus_SemiBold = os.path.join(osufile, 'fonts', 'Torus SemiBold.otf')

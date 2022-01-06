@@ -1,12 +1,14 @@
 from typing import Union, Type
-import aiohttp, json, os, traceback, hoshino
+import aiohttp, json, os, traceback
 from nonebot import get_bot
-from hoshino import logger
+from hoshino.log import new_logger
 from hoshino.config import SUPERUSERS
 
 api = 'https://osu.ppy.sh/api/v2'
 sayoapi = 'https://api.sayobot.cn'
-ppcalcapi: str = 'http://yuzuai.cn:6321'
+ppcalcapi = 'http://106.53.138.218:6321/api/osu'
+
+logger = new_logger('osuv2_api')
 
 class osutoken:
 
@@ -94,25 +96,51 @@ async def SayoApi(setid: int) -> Union[dict, bool]:
     except:
         return False
 
-async def PPApi(mode: int, mapid: int, acc: float=100, combo: int=0, good: int=0, bad: int=0,
-                miss: int=0, score: int=1000000, mods: list=[]) -> Union[dict, Type[Exception]]:
+async def PPApi(mode: int, mapid: int, acc: float = 0, combo: int = 0, good: int = 0, bad: int = 0,
+                miss: int = 0, score: int = 1000000, mods: list = []) -> Union[dict, Type[Exception]]:
     try:
-        mods_t = ''
-        if mods:
-            mods_t = '+'.join(mods) 
         if mode == 0:
-            url = f'{ppcalcapi}/osu?o={mapid}&a={acc}&g={good}&b={bad}&m={miss}&mods={mods_t}'
+            data = {
+                'mode': mode,
+                'map': mapid,
+                'accuracy': acc,
+                'combo': combo,
+                'good': good,
+                'bad': bad,
+                'miss': miss,
+                'mods': mods
+            }
         elif mode == 1:
-            url = f'{ppcalcapi}/taiko?o={mapid}&a={acc}&g={good}&m={miss}&mods={mods_t}'
+            data = {
+                'mode': mode,
+                'map': mapid,
+                'accuracy': acc,
+                'combo': combo,
+                'good': good,
+                'miss': miss,
+                'mods': mods
+            }
         elif mode == 2:
-            url = f'{ppcalcapi}/catch?o={mapid}&a={acc}&m={miss}&mods={mods_t}'
+            data = {
+                'mode': mode,
+                'map': mapid,
+                'accuracy': acc,
+                'combo': combo,
+                'miss': miss,
+                'mods': mods
+            }
         elif mode == 3:
-            url = f'{ppcalcapi}/mania?o={mapid}&s={score}&mods={mods_t}'
+            data = {
+                'mode': mode,
+                'map': mapid,
+                'score': score,
+                'mods': mods
+            }
         else:
             raise 'mode Error'
-        if combo != 0:
-            url += f'&c={combo}'
-        return await ApiInfo('PPCalc', url)
+        async with aiohttp.ClientSession() as session:
+            async with session.post(ppcalcapi, json=data) as req:
+                return await req.json()
     except Exception as e:
         logger.error(traceback.print_exc())
         return f'Error: {type(e)}'

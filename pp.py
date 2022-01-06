@@ -6,7 +6,7 @@ class PPCalc:
         self.mapid: int = mapid
         self.mode: int = mode
 
-    def __data(self, mode: int, info: dict):
+    def __data__(self, mode: int, info: dict):
         self.statistics = info['Statistics']
         self.acc = int(self.statistics['Accuracy'])
         self.combo = self.statistics['Combo']
@@ -38,7 +38,7 @@ class PPCalc:
 
     async def if_pp(self, mods: list) -> int:
         info = await PPApi(self.mode, self.mapid, mods=mods)
-        self.__data(self.mode, info)
+        self.__data__(self.mode, info)
         if self.mode == 0:
             return self.ifpp, self.stars, self.ar, self.od
         else:
@@ -46,20 +46,20 @@ class PPCalc:
 
     async def osu_pp(self, acc: float, combo: int, c100: int, c50: int, miss: int, mods: list):
         info = await PPApi(0, self.mapid, acc * 100, combo, c100, c50, miss=miss, mods=mods)
-        self.__data(self.mode, info)
+        self.__data__(self.mode, info)
         return self.pp, self.ifpp, self.sspp, self.aim, self.speed, self.acc, self.stars, self.ar, self.od
 
     async def taiko_pp(self, acc: float, combo: int, c100: int, miss: int, mods: list):
         info = await PPApi(1, self.mapid, acc * 100, combo, c100, miss=miss, mods=mods)
-        self.__data(self.mode, info)
+        self.__data__(self.mode, info)
         return self.pp, self.ifpp, self.stars
 
     async def catch_pp(self, acc: float, combo: int, miss: int, mods: list):
         info = await PPApi(2, self.mapid, acc * 100, combo, miss=miss, mods=mods)
-        self.__data(self.mode, info)
+        self.__data__(self.mode, info)
         return self.pp, self.ifpp, self.stars
 
     async def mania_pp(self, score: int, mods: list):
         info = await PPApi(3, self.mapid, score=score, mods=mods)
-        self.__data(self.mode, info)
+        self.__data__(self.mode, info)
         return self.pp, self.ifpp, self.stars
