@@ -1,12 +1,12 @@
 from typing import Union, Type
 import aiohttp, json, os, traceback
 from nonebot import get_bot
-from hoshino.log import new_logger
 from hoshino.config import SUPERUSERS
+from hoshino.log import new_logger
 
 api = 'https://osu.ppy.sh/api/v2'
 sayoapi = 'https://api.sayobot.cn'
-ppcalcapi = 'http://106.53.138.218:6321/api/osu'
+ppcalcapi = 'http://yuzuai.cn:6321/api/osu'
 
 logger = new_logger('osuv2_api')
 
@@ -19,7 +19,7 @@ class osutoken:
         self.token_json = os.path.join(os.path.dirname(__file__), 'token.json')
         self.token: dict = json.load(open(self.token_json, 'r', encoding='utf-8'))
 
-    async def update_token(self) -> Union[str, bool]:
+    async def update_token(self) -> str:
         bot = get_bot()
         url = 'https://osu.ppy.sh/oauth/token'
         data = {
@@ -53,7 +53,7 @@ class osutoken:
         logger.info('OAuth Certification Successful')
         await bot.send_private_msg(user_id=SUPERUSERS[0], message='OAuth 认证令牌更新完毕')
         return True
-    
+
     @property
     def accesstoken(self) -> str:
         '''返回 `access_token` '''

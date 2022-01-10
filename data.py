@@ -1,6 +1,21 @@
-from .mods import Mods
+from typing import Optional
 from datetime import datetime, timedelta
 from time import mktime, strptime
+from pydantic import BaseModel
+
+from .mods import Mods
+
+class UserInfo(BaseModel):
+    avatar_url: Optional[str]
+    country_code: Optional[str]
+    id: Optional[int]
+    is_online: Optional[bool]
+    is_supporter: Optional[bool]
+    username: Optional[str]
+    cover_url: Optional[str]
+    badges: Optional[list]
+    statistics: Optional[dict]
+    level: Optional[dict]
 
 class UserInfo:
     '''
@@ -34,7 +49,7 @@ class UserInfo:
         self.count: int = self.play['total_hits']
         self.g_counts: dict = self.play['grade_counts']
         self.gc: list = self.g_counts['ssh'], self.g_counts['ss'], self.g_counts['sh'], self.g_counts['s'], self.g_counts['a']
-        self.crank: int = self.play['rank']['country'] if self.play['rank']['country'] else 0
+        self.crank: int = self.play['country_rank'] if self.play['country_rank'] else 0
 
 class ScoreInfo:
     '''
@@ -136,10 +151,7 @@ class ScoreInfo:
             if self.modslist:
                 self.bpList = self.modslist
         else:
-            if max > len(self.info):
-                self.bpList = f'用户的bp数量为{len(self.info)}，超出指定范围'
-            else:
-                self.bpList = range(min-1, max)
+            self.bpList = range(min-1, max)
         
         return self.bpList
 
@@ -152,7 +164,7 @@ class ScoreInfo:
         self.title: str = self.map['title_unicode'] if self.map['title_unicode'] else self.map['title']
         
         return self.__AllScore(self.info[bp])
-    
+
     def NewBPScore(self) -> dict:
         self.bpList = []
         for num, i in enumerate(self.info):

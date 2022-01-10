@@ -1,9 +1,10 @@
-import aiohttp, os, re, zipfile, shutil, hoshino
-from hoshino import logger
+import aiohttp, os, re, zipfile, shutil
+from hoshino.log import new_logger
 from io import BytesIO, TextIOWrapper
 from typing import Union
 
 osufile = os.path.join(os.path.dirname(__file__), 'osufile')
+logger = new_logger('osuv2_file')
 
 async def MapDownload(setid: Union[str, int], DL: bool = False) -> str:
     # 判断是否存在该文件

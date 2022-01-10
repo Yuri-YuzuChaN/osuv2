@@ -1,8 +1,9 @@
 import re, os, asyncio
 from hoshino.config import SUPERUSERS
-from hoshino import Service, priv, logger
+from hoshino import Service, priv
 from hoshino.service import sucmd
 from hoshino.typing import CQEvent, CommandSession
+from hoshino.log import new_logger
 from nonebot import get_bot
 from typing import Union
 from asyncio.tasks import Task
@@ -14,6 +15,7 @@ from .api import token
 
 sv = Service('osuv2', manage_priv=priv.ADMIN, enable_on_default=True)
 helpimg = os.path.join(os.path.dirname(__file__), 'osufile', 'help.png')
+logger = new_logger('osuv2')
 
 GM = {0 : 'osu', 1 : 'taiko', 2 : 'fruits', 3 : 'mania'}
 GMN = {0 : 'Std', 1 : 'Taiko', 2 : 'Ctb', 3 : 'Mania'}
@@ -100,7 +102,7 @@ def ScoreBpInfo(user: tuple, args: List[str]) -> Union[list, str]:
         if not user:
             info = '该账号尚未绑定，请输入 bind 用户名 绑定账号'
         elif not args[0].isdigit():
-            info = '请输入正确的地图ID'
+            info = '请输入正确参数'
         else:
             id, mode, data = user[0], user[2], args[0]
             isint = True
@@ -121,7 +123,7 @@ def ScoreBpInfo(user: tuple, args: List[str]) -> Union[list, str]:
         elif args[1].isdigit():
             id, data= args[0], args[1]
         else:
-            info = '请输入正确的地图ID'
+            info = '请输入正确参数'
     elif len(args) == 3:
         if (':' in args[1] or '：' in args[1]) and '+' in args[2] and args[0].isdigit():
             if not user:
@@ -136,7 +138,7 @@ def ScoreBpInfo(user: tuple, args: List[str]) -> Union[list, str]:
             mods = Msg2list(args[2])
             id, data = args[0], args[1]
         else:
-            info = '请输入正确的地图ID'
+            info = '请输入正确参数'
     else:
         if (':' in args[-1] or '：' in args[-1]) and args[-2].isdigit():
             id, mode, data = ' '.join(args[:len(args)-2]), int(args[-1][1]), args[-2]
@@ -149,7 +151,7 @@ def ScoreBpInfo(user: tuple, args: List[str]) -> Union[list, str]:
         elif args[-1].isdigit():
             id, data= ' '.join(args[:len(args)-1]), args[-1]
         else:
-            info = '请输入正确的地图ID'
+            info = '请输入正确参数'
     if not info:
         info: list[Union[str, int, bool]] = [id, mode, int(data), mods, isint]
 
@@ -192,8 +194,8 @@ async def bp(bot, ev:CQEvent):
         data = info
     else:
         id, mode, best, mods, isint = info
-        if best <= 0 or best > 50:
-            await bot.finish(ev, '只允许查询bp 1-50 的成绩', at_sender=True)
+        if best <= 0 or best > 100:
+            await bot.finish(ev, '只允许查询bp 1-100 的成绩', at_sender=True)
         data = await draw_score('bp', id, GM[mode], best=best, mods=mods, isint=isint)
     await bot.send(ev, data, at_sender=True)
 
@@ -422,7 +424,7 @@ async def recent(bot, ev:CQEvent):
 
 @sucmd('updateoauth', aliases=('更新OAuth'))
 async def updateoauth(session: CommandSession):
-    msg = await token.update_token()
+    await token.update_token()
 
 @sv.scheduled_job('cron', hour='0')
 async def update_info():
@@ -432,10 +434,7 @@ async def update_info():
     for n, qqid in enumerate(result):
         task = loop.create_task(user(qqid[0], True))
         tasks.append(task)
-        if n == 0:
-            await asyncio.sleep(10)
-        else:
-            await asyncio.sleep(1)
+        await asyncio.sleep(1)
     await asyncio.sleep(10)
 
     for _ in tasks:
