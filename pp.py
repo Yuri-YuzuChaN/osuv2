@@ -7,34 +7,34 @@ class PPCalc:
         self.mode: int = mode
 
     def __data__(self, mode: int, info: dict):
-        self.statistics = info['Statistics']
-        self.acc = int(self.statistics['Accuracy'])
-        self.combo = self.statistics['Combo']
-        self.c300 = self.statistics['Great']
-        self.miss = self.statistics['Miss']
-        self.pp = int(info['pp'])
-        self.ifpp = int(info['ifpp'])
-        self.stars = info['mapinfo']['star_rating']
+        score = info['score']
+        statistics = score['statistics']
+        performance = info['performance_attributes']
+        difficulty = info['difficulty_attributes']
+        self.combo = score['combo']
+        self.c300 = statistics['Great']
+        self.miss = statistics['Miss']
+        self.pp = int(performance['pp'])
+        self.ifpp = int(performance['ifpp'])
+        self.stars = float(f'{difficulty["star_rating"]:.2f}')
         if mode == 0:
-            self.aim = int(info['Aim'])
-            self.max_combo = info['Max Combo']
-            self.c50 = self.statistics['Meh']
-            self.c100 = self.statistics['Ok']
-            self.od = info['OD']
-            self.speed = int(info['Speed'])
-            self.ar = info['mapinfo']['ar_rating']
-            self.od = info['mapinfo']['od_rating']
-            self.sspp = int(info['accpp'][-1])
+            self.aim = int(performance['aim'])
+            self.acc = int(performance['accuracy'])
+            self.max_combo = difficulty['max_combo']
+            self.c50 = statistics['Meh']
+            self.c100 = statistics['Ok']
+            self.speed = int(performance['speed'])
+            self.ar = float(f'{difficulty["approach_rate"]:.1f}')
+            self.od = float(f'{difficulty["overall_difficulty"]:.1f}')
+            self.sspp = int(performance['accpp'][-1])
         elif mode == 1:
-            self.c100 = self.statistics['Ok']
-            self.strain = info['Strain']
-            self.c50 = self.statistics['Meh']
+            self.c100 = statistics['Ok']
+            self.c50 = statistics['Meh']
         elif mode == 2:
             pass
         else:
-            self.c100 = self.statistics['Ok']
-            self.strain = info['Strain']
-            self.perfect = self.statistics['Perfect']
+            self.c100 = statistics['Ok']
+            self.perfect = statistics['Perfect']
 
     async def if_pp(self, mods: list) -> int:
         info = await PPApi(self.mode, self.mapid, mods=mods)
