@@ -434,7 +434,10 @@ async def update_info():
     for n, qqid in enumerate(result):
         task = loop.create_task(user(qqid[0], True))
         tasks.append(task)
-        await asyncio.sleep(1)
+        if n == 0:
+            await asyncio.sleep(10)
+        else:
+            await asyncio.sleep(1)
     await asyncio.sleep(10)
 
     for _ in tasks:
