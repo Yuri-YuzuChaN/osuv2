@@ -96,7 +96,7 @@ async def SayoApi(setid: int) -> Union[dict, bool]:
     except:
         return False
 
-async def PPApi(mode: int, mapid: int, acc: float = 0, combo: int = 0, good: int = 0, bad: int = 0,
+async def PPApi(mode: int, mapid: int, acc: float = 0, combo: int = 0, perfect: int = 0, good: int = 0, bad: int = 0,
                 miss: int = 0, score: int = 1000000, mods: list = []) -> Union[dict, Type[Exception]]:
     try:
         if mode == 0:
@@ -105,6 +105,7 @@ async def PPApi(mode: int, mapid: int, acc: float = 0, combo: int = 0, good: int
                 'map': mapid,
                 'accuracy': acc,
                 'combo': combo,
+                'perfect': perfect,
                 'good': good,
                 'bad': bad,
                 'miss': miss,

@@ -44,13 +44,13 @@ class PPCalc:
         else:
             return self.ifpp, self.stars
 
-    async def osu_pp(self, acc: float, combo: int, c100: int, c50: int, miss: int, mods: list):
-        info = await PPApi(0, self.mapid, acc * 100, combo, c100, c50, miss=miss, mods=mods)
+    async def osu_pp(self, acc: float, combo: int, c300: int, c100: int, c50: int, miss: int, mods: list):
+        info = await PPApi(0, self.mapid, acc * 100, combo, c300, c100, c50, miss=miss, mods=mods)
         self.__data__(self.mode, info)
         return self.pp, self.ifpp, self.sspp, self.aim, self.speed, self.acc, self.stars, self.ar, self.od
 
     async def taiko_pp(self, acc: float, combo: int, c100: int, miss: int, mods: list):
-        info = await PPApi(1, self.mapid, acc * 100, combo, c100, miss=miss, mods=mods)
+        info = await PPApi(1, self.mapid, acc * 100, combo, good=c100, miss=miss, mods=mods)
         self.__data__(self.mode, info)
         return self.pp, self.ifpp, self.stars
 
