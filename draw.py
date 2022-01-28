@@ -428,7 +428,7 @@ async def draw_score(project: str,
         #pp
         calc = PPCalc(info.mode, info.mapid)
         if info.mode == 0:
-            _pp, ifpp, sspp, aim_pp, speed_pp, acc_pp, stars, ar, od = await calc.osu_pp(info.acc, info.maxcb, info.c100, info.c50, info.cmiss, info.mods)
+            _pp, ifpp, sspp, aim_pp, speed_pp, acc_pp, stars, ar, od = await calc.osu_pp(info.acc, info.maxcb, info.c300, info.c100, info.c50, info.cmiss, info.mods)
             pp = int(info.pp) if info.pp != -1 else _pp
         elif info.mode == 1:
             _pp, ifpp, stars = await calc.taiko_pp(info.acc, info.maxcb, info.c100, info.cmiss, info.mods)
