@@ -12,8 +12,8 @@ class PPCalc:
         performance = info['performance_attributes']
         difficulty = info['difficulty_attributes']
         self.combo = score['combo']
-        self.c300 = statistics['Great']
-        self.miss = statistics['Miss']
+        self.c300 = statistics['great']
+        self.miss = statistics['miss']
         self.pp = int(performance['pp'])
         self.ifpp = int(performance['ifpp'])
         self.stars = float(f'{difficulty["star_rating"]:.2f}')
@@ -21,20 +21,20 @@ class PPCalc:
             self.aim = int(performance['aim'])
             self.acc = int(performance['accuracy'])
             self.max_combo = difficulty['max_combo']
-            self.c50 = statistics['Meh']
-            self.c100 = statistics['Ok']
+            self.c50 = statistics['meh']
+            self.c100 = statistics['ok']
             self.speed = int(performance['speed'])
             self.ar = float(f'{difficulty["approach_rate"]:.1f}')
             self.od = float(f'{difficulty["overall_difficulty"]:.1f}')
             self.sspp = int(performance['accpp'][-1])
         elif mode == 1:
-            self.c100 = statistics['Ok']
-            self.c50 = statistics['Meh']
+            self.c100 = statistics['ok']
+            self.c50 = statistics['meh']
         elif mode == 2:
             pass
         else:
-            self.c100 = statistics['Ok']
-            self.perfect = statistics['Perfect']
+            self.c100 = statistics['ok']
+            self.perfect = statistics['perfect']
 
     async def if_pp(self, mods: list) -> int:
         info = await PPApi(self.mode, self.mapid, mods=mods)
