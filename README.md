@@ -6,8 +6,6 @@
 
 ## 使用方法
 
-### ！由于更新内容过多，请已使用的用户必须执行`UPDATE_SQL.py`进行数据库更新！
-
 1. 将该项目放在HoshinoBot插件目录 `modules` 下，或者clone本项目 `git clone https://github.com/Yuri-YuzuChaN/osuv2`
 2. 在`token.json`填入申请的`client_id`，`client_secret`，`access_token`，`refresh_token`，[如何申请token](#如何申请token)
 3. pip以下依赖：`pillow`，`matplotlib`，`traceback`
