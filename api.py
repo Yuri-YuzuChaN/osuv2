@@ -6,7 +6,7 @@ from hoshino.log import new_logger
 
 api = 'https://osu.ppy.sh/api/v2'
 sayoapi = 'https://api.sayobot.cn'
-ppcalcapi = 'http://yuzuai.cn:6321/api/osu'
+ppcalcapi = 'http://106.53.138.218:6321/api/osu'
 
 logger = new_logger('osuv2_api')
 
