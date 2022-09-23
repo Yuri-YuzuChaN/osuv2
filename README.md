@@ -1,3 +1,5 @@
+# 正在重写osu插件
+
 # osuv2
 
 基于HoshinoBot v2的osu api v2版本的查询模块
