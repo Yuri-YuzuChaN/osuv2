@@ -763,7 +763,7 @@ def img2b64(img: Image.Image) -> str:
     return 'base64://' + base64_str
 
 def strtime(time: str) -> str:
-    old_time = datetime.strptime(time.replace('+00:00', ''), '%Y-%m-%dT%H:%M:%S')
+    old_time = datetime.strptime(time, '%Y-%m-%dT%H:%M:%SZ')
     new_time = (old_time + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
     return new_time
 
