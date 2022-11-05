@@ -439,7 +439,7 @@ async def get_bg(bot: NoneBot, ev: CQEvent):
 
 @sv.on_prefix(['osuhelp', 'Osuhelp', 'OSUHELP'])
 async def osuhelp(bot: NoneBot, ev: CQEvent):
-    await bot.send(ev, MessageSegment.image(os.path.join(PATH, 'help.png')))
+    await bot.send(ev, MessageSegment.image(os.path.join(FILEPATH, 'help.png')))
 
 @sucmd('更新OAuth')
 async def update_oauth(session: CommandSession):
