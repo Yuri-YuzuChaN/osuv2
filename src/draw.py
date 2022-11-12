@@ -492,7 +492,7 @@ class DrawScore:
         for num, v in enumerate(self.Info):
             today = datetime.now().date()
             today_stamp = mktime(strptime(str(today), '%Y-%m-%d'))
-            playtime = datetime.strptime(v['created_at'].replace('+00:00', ''), '%Y-%m-%dT%H:%M:%S') + timedelta(hours=8)
+            playtime = datetime.strptime(v['created_at'], '%Y-%m-%dT%H:%M:%SZ') + timedelta(hours=8)
             play_stamp = mktime(strptime(str(playtime), '%Y-%m-%d %H:%M:%S'))
             
             if play_stamp > today_stamp:
