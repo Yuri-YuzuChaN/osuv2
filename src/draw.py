@@ -737,7 +737,7 @@ class DrawScore:
                 x = trfont.get_box(self.version, 18)
                 trfont.draw(125, 158 + h_num, 18, self.version, (238, 171, 0, 255), anchor='lm')
                 # 时间
-                old_time = datetime.strptime(self.date.replace('+00:00', ''), '%Y-%m-%dT%H:%M:%S')
+                old_time = datetime.strptime(self.date, '%Y-%m-%dT%H:%M:%SZ')
                 new_time = (old_time + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
                 trfont.draw(125 + x[2], 158 + h_num, 18, f'  |  {new_time}', anchor='lm')
                 # acc
@@ -871,7 +871,7 @@ async def map_info(mapid: int, mods: list) -> Union[str, MessageSegment]:
             pp, stars = await PPCalc(mapinfo.mode, mapid).if_pp(mods=mods)
         # 计算时间
         if mapinfo.ranked_date:
-            old_time = datetime.strptime(mapinfo.ranked_date.replace('+00:00', ''), '%Y-%m-%dT%H:%M:%S')
+            old_time = datetime.strptime(mapinfo.ranked_date, '%Y-%m-%dT%H:%M:%SZ')
             new_time = (old_time + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
         else:
             new_time = '??-??-?? ??:??:??'
