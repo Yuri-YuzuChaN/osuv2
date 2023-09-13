@@ -10,7 +10,7 @@
 ## 使用方法
 
 1. 将该项目放在HoshinoBot插件目录 `modules` 下，或者clone本项目 `git clone https://github.com/Yuri-YuzuChaN/osuv2`
-2. 在 `OAuth.json` 填入申请的 `client_id`，`client_secret`，[如何申请 OAuth 客户端](#如何申请OAuth客户端)
+2. 在 `static/OAuth.json` 文件填入申请的 `client_id`，`client_secret`，[如何申请 OAuth 客户端](#如何申请OAuth客户端)
 3. 安装第三方依赖：`pip install -r requirements.txt`
 4. 在`config/__bot__.py`模块列表中添加`osuv2`
 5. 重启HoshinoBot
@@ -162,3 +162,7 @@
 1. 船新版本的osu插件
 
 </details>
+
+## License
+
+MIT

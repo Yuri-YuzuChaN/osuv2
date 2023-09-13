@@ -5,8 +5,8 @@ from hoshino.service import Service, priv
 
 # 路径
 Root = Path(__file__).parent
-OAuthJson = Root / 'OAuth.json'
 static = Root / 'static'
+OAuthJson = static / 'OAuth.json'
 OsuDataBase = static / 'osu.db'
 MeiryoR = static / 'fonts' / 'Meiryo Regular.ttf'
 MeiryoS = static / 'fonts' / 'Meiryo SemiBold.ttf'
