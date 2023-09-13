@@ -9,6 +9,11 @@ class UserNotFoundError(Exception):
     def __str__(self) -> str:
         return '未查询到该玩家'
 
+class PPError(Exception):
+    
+    def __str__(self) -> str:
+        return f'Error: PP计算服务错误，请联系bot管理员'
+
 class UserEnterError(Exception):
 
     def __str__(self) -> str:
