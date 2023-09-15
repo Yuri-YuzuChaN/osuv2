@@ -23,7 +23,12 @@ async def update_daily_data() -> int:
             tasks.append(task)
         
         done, pending = await asyncio.wait(tasks)
-        userdata = [ _.result() for _ in done ]
+        userdata = []
+        for _ in done:
+            try:
+                userdata.append(_.result())
+            except:
+                continue
         _in = insert_user_daily_data(mode, userdata)
         if _in:
             sv.logger.info(f'模式 {GameMode[mode]} 添加每日数据完成')

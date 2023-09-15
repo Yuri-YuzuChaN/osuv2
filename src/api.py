@@ -8,7 +8,7 @@ from .. import *
 from .Model import *
 
 
-class OAuth(OAuth2Session):
+class OAuthClient(OAuth2Session):
 
     async def requestAsync(self,
                            method: str,
@@ -48,9 +48,9 @@ class OsuAPI:
         self.refresh_token = refresh_token
         self.session = self._new_session()
 
-    def _new_session(self) -> OAuth:
+    def _new_session(self) -> OAuthClient:
         client = BackendApplicationClient(self.client_id, scope=['public'])
-        session = OAuth(client=client)
+        session = OAuthClient(client=client)
         token = session.fetch_token(
             self.TokenUrl, client_secret=self.client_secret)
         self.access_token = token['access_token']

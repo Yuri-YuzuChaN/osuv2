@@ -17,7 +17,7 @@ from .Image import *
 
 class DrawInfo:
     
-    def __init__(self, userInfo: User, day: int = 0) -> None:
+    def __init__(self, userInfo: User, day: int) -> None:
         self.user = userInfo
         self.score = userInfo.statistics
         self.day = day
@@ -165,7 +165,7 @@ class DrawInfo:
             raise DrawImageError(type(e))
  
         
-async def draw_info(user_id: Union[int, str], mode: str) -> Union[str, MessageSegment]:
+async def draw_info(user_id: Union[int, str], mode: str, day: int = 1) -> Union[str, MessageSegment]:
     try:
         sv.logger.info(f'Start Request OsuAPI {playtime(time() * 1000)}')
         UserInfo = await osuApi.user(user_id, mode=mode)
@@ -177,7 +177,7 @@ async def draw_info(user_id: Union[int, str], mode: str) -> Union[str, MessageSe
         if not userData.statistics.play_count:
             return f'该玩家尚未游玩过{GameModeName[mode]}模式'
 
-        data = DrawInfo(userData)
+        data = DrawInfo(userData, day)
         im = await data.draw()
         # 输出
         msg = MessageSegment.image(img2b64(im))

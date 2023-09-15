@@ -312,7 +312,7 @@ async def osuhelp(bot: NoneBot, ev: CQEvent):
     await bot.send(ev, MessageSegment.image(f'file:///{static / "help.png"}'))
 
 
-@sv.scheduled_job('cron', hour='0', minute='5')
+@sv.scheduled_job('cron', hour='0', minute='0')
 async def update_info():
     num = await update_daily_data()
     sv.logger.info(f'已更新 {num} 位玩家数据')

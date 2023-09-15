@@ -1,5 +1,4 @@
 import gc
-import os
 import traceback
 from time import time
 from typing import List, Optional
@@ -85,9 +84,9 @@ class DrawScore:
             score_acc_img = Image.open(self._wedgeAcc()).convert('RGBA').resize((576, 432))
             icon = Image.open(await getImage(self.user.avatar_url)).convert('RGBA').resize((150, 150))
             icon_img = draw_filler(icon, 25)
-            country_img = Image.open(os.path.join(FlagsDir, f'{self.user.country_code}.png')).convert('RGBA').resize((58, 39))
-            status_img = Image.open(os.path.join(WorkDir, 'on-line.png' if self.user.is_online else 'off-line.png')).convert('RGBA').resize((45, 45))
-            supporter_img = Image.open(os.path.join(WorkDir, 'suppoter.png')).convert('RGBA').resize((40, 40))
+            country_img = Image.open(FlagsDir / f'{self.user.country_code}.png').convert('RGBA').resize((58, 39))
+            status_img = Image.open(WorkDir / 'on-line.png' if self.user.is_online else 'off-line.png').convert('RGBA').resize((45, 45))
+            supporter_img = Image.open(WorkDir / 'suppoter.png').convert('RGBA').resize((40, 40))
             
             # 作图
             im = Image.new('RGBA', (1500, 800))
@@ -108,12 +107,12 @@ class DrawScore:
             # Mods
             if self.score.mods:
                 for num, s in enumerate(self.score.mods):
-                    mods_img = Image.open(os.path.join(ModsDir, f'{s}.png')).convert('RGBA')
+                    mods_img = Image.open(ModsDir / f'{s}.png').convert('RGBA')
                     im.alpha_composite(mods_img, (500 + 50 * num, 240))
             # 游玩评价
             rank_ok = False
             for num, i in enumerate(ranking):
-                rank_img = os.path.join(RankDir, f'ranking-{i}.png')
+                rank_img = RankDir / f'ranking-{i}.png'
                 rank_b = Image.open(rank_img).resize((48, 24))
                 if rank_ok:
                     rank_new = Image.new('RGBA', rank_b.size, (0, 0, 0, 0))
@@ -225,7 +224,11 @@ class DrawScore:
 async def draw_score(project: str, user_id: str, mode: str, *, mapid: Optional[int] = 0, best: Optional[int] = 0, mods: List[str] = None) -> Union[str, MessageSegment]:
     try:
         sv.logger.info(f'Start Request OsuAPI {playtime(time() * 1000)}')
-        if project == 'score':
+        if project == 'recent' or project == 'passrecent':
+            fails = 1 if project == 'recent' else 0
+            data = await osuApi.user_recent(user_id, mode=mode, include_fails=fails)
+            scoreData = Score(**data[best])
+        elif project == 'score':
             data = await osuApi.user_scores(user_id, mapid, mode=mode, mods=mods)
             scoreData = BestScore(**data)
         else:

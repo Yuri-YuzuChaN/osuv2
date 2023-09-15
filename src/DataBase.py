@@ -34,7 +34,7 @@ class ModeData(OsuModel):
     Accuracy = FloatField()
     PlayCount = BigIntegerField()
     Hit = BigIntegerField()
-    DateTime = DateTimeField(default=datetime.now() + timedelta(days=-1))
+    DateTime = DateTimeField(formats='%Y-%m-%d', default=datetime.date(datetime.now() + timedelta(days=1)))
 
 
 class StdMode(ModeData):
@@ -77,7 +77,7 @@ def get_all_user_osuid() -> List[User]:
 
 
 def get_user_daily_data(osuid: int, day: int = 0, mode: int = 0) -> Optional[ModeData]:
-    time = datetime.now() - timedelta(day)
+    time = datetime.date(datetime.now() - timedelta(days=day))
     table = ModeTable[mode]
     record: Select = table.select().where((table.Osuid == osuid) & (table.DateTime == time))
     if record:
@@ -97,12 +97,12 @@ def insert_user_daily_data(mode: int, data: List[_User]) -> bool:
     try:
         table = ModeTable[mode]
         dbdata = [(d.id, 
-            d.statistics.country_rank, 
-            d.statistics.global_rank, 
-            d.statistics.pp,
-            d.statistics.accuracy,
-            d.statistics.play_count,
-            d.statistics.total_hits) for d in data]
+            d.statistics.country_rank if d.statistics.country_rank else 0, 
+            d.statistics.global_rank if d.statistics.global_rank else 0, 
+            d.statistics.pp if d.statistics.pp else 0,
+            d.statistics.accuracy if d.statistics.accuracy else 0,
+            d.statistics.play_count if d.statistics.play_count else 0,
+            d.statistics.total_hits if d.statistics.total_hits else 0) for d in data]
         with db.atomic():
             for i in range(0, len(data), 100):
                 table.insert_many(dbdata[i:i + 100], ['Osuid', 'CountryRanked', 'GlobalRanked', 'Pp', 'Accuracy', 'PlayCount', 'Hit']).execute()   
